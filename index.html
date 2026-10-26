@@ -13,6 +13,7 @@
   <meta name="description" content="スマホの電子コンパス＆3Dジャイロ連動。実物総合羅盤の3D立体鑑賞、部屋の気の流れを可視化する3D間取りシミュレーター、二十四山・八宅本命卦・AR透かし鑑定まで完備した世界初の本格風水Webアプリ。">
   <meta name="theme-color" content="#120c0e">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="本格風水羅盤">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   
   <!-- Google Fonts -->
@@ -1335,7 +1336,7 @@
           <span>🏛️</span>
           <span>KINDLE読者限定 総合羅盤</span>
         </div>
-        <button class="sound-toggle-btn" id="btnSound" title="音声切り替え">
+        <button onclick="showPwaModal()" id="btnPwaInstall" style="background:linear-gradient(135deg, rgba(212,175,55,0.25), rgba(120,20,20,0.35)); border:1.2px solid var(--gold-primary); color:var(--gold-light); font-size:0.72rem; padding:3px 10px; border-radius:16px; cursor:pointer; display:flex; align-items:center; gap:4px; font-weight:600; margin-right:4px;"><span>📲</span><span>ホーム画面に追加</span></button><button class="sound-toggle-btn" id="btnSound" title="音声切り替え">
           <span>🔔</span> <span id="soundText">音: ON</span>
         </button>
       </div>
@@ -3415,5 +3416,87 @@ ${dilemma}
     updateFengShuiPromptPreview();
     renderRecordsList();
   </script>
+
+  <!-- PWA Service Worker ＆ ホーム画面追加ロジック -->
+  <script>
+    // Service Worker 登録
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').then((reg) => {
+          console.log('SW registered:', reg.scope);
+        }).catch((err) => {
+          console.log('SW registration failed:', err);
+        });
+      });
+    }
+
+    // Android PWA インストールプロンプト
+    let deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      const btn = document.getElementById('btnPwaInstall');
+      if (btn) {
+        btn.style.animation = 'pulse 2s infinite';
+      }
+    });
+
+    function showPwaModal() {
+      // Androidでネイティブプロンプトが利用可能な場合は直接発火
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            console.log('User accepted the PWA install');
+          }
+          deferredPrompt = null;
+        });
+        return;
+      }
+      document.getElementById('pwaModal').style.display = 'flex';
+    }
+
+    function closePwaModal() {
+      document.getElementById('pwaModal').style.display = 'none';
+    }
+  </script>
+
+  <!-- PWA ホーム画面追加案内モーダル -->
+  <div id="pwaModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:99999; justify-content:center; align-items:center; padding:18px; box-sizing:border-box; backdrop-filter:blur(6px);" onclick="if(event.target===this)closePwaModal()">
+    <div style="background:radial-gradient(circle at 50% 20%, #25161f 0%, #110d14 100%); border:1.5px solid var(--gold-primary); border-radius:18px; max-width:440px; width:100%; padding:24px 20px; box-sizing:border-box; color:#f0f3f8; position:relative; box-shadow:0 15px 50px rgba(0,0,0,0.9), 0 0 20px rgba(212,175,55,0.2);">
+      <button onclick="closePwaModal()" style="position:absolute; top:12px; right:14px; background:none; border:none; color:#a0a0ab; font-size:1.5rem; cursor:pointer; line-height:1;">✕</button>
+      
+      <div style="text-align:center; margin-bottom:14px;">
+        <div style="font-size:2.2rem; margin-bottom:4px;">🧭</div>
+        <h3 style="color:var(--gold-light); font-size:1.15rem; margin:0; font-family:var(--font-serif); letter-spacing:0.05em;">ホーム画面に追加してアプリ化</h3>
+        <p style="font-size:0.82rem; color:#a0a0ab; margin-top:4px; line-height:1.5;">
+          ホーム画面に追加すると、ブラウザの枠やアドレスバーが消え、<br><strong style="color:#fef08a;">全画面の実物大「スマホ本格風水羅盤」</strong>としていつでも1タップで起動できます。
+        </p>
+      </div>
+
+      <div style="background:rgba(0,0,0,0.45); border:1px solid rgba(212,175,55,0.25); border-radius:12px; padding:12px 14px; margin-bottom:12px; font-size:0.84rem; line-height:1.65;">
+        <strong style="color:#fef08a; display:flex; align-items:center; gap:5px; margin-bottom:4px;">
+          <span>🍏</span> <span>iPhone (Safari) での追加手順：</span>
+        </strong>
+        1. 画面下部（または上部）の <strong>「共有アイコン（四角から上矢印 ⎋）」</strong> をタップ<br>
+        2. メニューを少しスクロールして <strong>「ホーム画面に追加 ＋」</strong> を選択<br>
+        3. 右上の <strong>「追加」</strong> をタップして完了！
+      </div>
+
+      <div style="background:rgba(0,0,0,0.45); border:1px solid rgba(212,175,55,0.25); border-radius:12px; padding:12px 14px; margin-bottom:18px; font-size:0.84rem; line-height:1.65;">
+        <strong style="color:#86efac; display:flex; align-items:center; gap:5px; margin-bottom:4px;">
+          <span>🤖</span> <span>Android (Chrome) での追加手順：</span>
+        </strong>
+        1. 画面右上の <strong>「︙（縦の3点リーダー）」</strong> をタップ<br>
+        2. メニュー内の <strong>「アプリをインストール」</strong> または <strong>「ホーム画面に追加」</strong> をタップ<br>
+        3. 確認画面で <strong>「インストール」</strong> をタップして完了！
+      </div>
+
+      <button onclick="closePwaModal()" style="width:100%; padding:11px; background:linear-gradient(135deg, #a82020 0%, #681010 100%); color:#fff; border:1px solid var(--gold-primary); border-radius:10px; font-weight:bold; font-size:0.92rem; cursor:pointer; box-shadow:0 4px 12px rgba(168,32,32,0.4);">
+        了解しました
+      </button>
+    </div>
+  </div>
+
 </body>
 </html>
