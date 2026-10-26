@@ -1322,6 +1322,112 @@
       max-height: 440px !important;
     }
 
+
+    /* ==========================================================
+       羅盤盤面・磁針直結のリアルタイム吉凶HUDスタイル
+       ========================================================== */
+    .aim-fortune-hud {
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 25;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(14, 11, 18, 0.94);
+      border: 1.5px solid var(--gold-primary);
+      border-radius: 20px;
+      padding: 3px 12px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: var(--gold-light);
+      letter-spacing: 0.05em;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.85), 0 0 10px rgba(212, 175, 55, 0.4);
+      pointer-events: none;
+      white-space: nowrap;
+      backdrop-filter: blur(8px);
+      transition: all 0.2s cubic-bezier(0.1, 0.9, 0.2, 1);
+    }
+    .aim-fortune-hud .hud-aim-arrow {
+      color: #ef4444;
+      font-size: 0.85rem;
+      line-height: 1;
+    }
+    .aim-fortune-hud .hud-kua-badge {
+      padding: 1px 7px;
+      border-radius: 10px;
+      font-size: 0.72rem;
+      font-weight: 900;
+      transition: all 0.2s ease;
+    }
+
+    /* 吉凶レベル別発光スタイル */
+    .aim-fortune-hud.level-great {
+      border-color: #fef08a;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.9), 0 0 14px rgba(254, 240, 138, 0.6);
+    }
+    .aim-fortune-hud.level-great .hud-kua-badge {
+      background: linear-gradient(135deg, #b45309, #d97706);
+      color: #fef08a;
+      border: 1px solid #fef08a;
+      box-shadow: 0 0 6px #fef08a;
+    }
+
+    .aim-fortune-hud.level-good {
+      border-color: #60a5fa;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.9), 0 0 12px rgba(96, 165, 250, 0.5);
+    }
+    .aim-fortune-hud.level-good .hud-kua-badge {
+      background: linear-gradient(135deg, #1e3a8a, #2563eb);
+      color: #bfdbfe;
+      border: 1px solid #60a5fa;
+    }
+
+    .aim-fortune-hud.level-bad {
+      border-color: #ef4444;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.9), 0 0 14px rgba(239, 68, 68, 0.6);
+    }
+    .aim-fortune-hud.level-bad .hud-kua-badge {
+      background: linear-gradient(135deg, #7f1d1d, #b91c1c);
+      color: #fecaca;
+      border: 1px solid #ef4444;
+    }
+
+    /* 天池（磁針）直結のミニ吉凶バッジ */
+    .needle-fortune-tag {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -75%);
+      z-index: 22;
+      font-size: 0.62rem;
+      font-weight: 800;
+      padding: 1.5px 7px;
+      border-radius: 8px;
+      background: rgba(10, 8, 14, 0.92);
+      border: 1px solid var(--gold-primary);
+      color: var(--gold-light);
+      pointer-events: none;
+      white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.95);
+      transition: all 0.2s ease;
+    }
+    .needle-fortune-tag.level-great {
+      border-color: #fef08a;
+      color: #fef08a;
+      box-shadow: 0 0 8px rgba(254, 240, 138, 0.6);
+    }
+    .needle-fortune-tag.level-good {
+      border-color: #60a5fa;
+      color: #93c5fd;
+    }
+    .needle-fortune-tag.level-bad {
+      border-color: #ef4444;
+      color: #fca5a5;
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+    }
+
 </style>
 </head>
 <body>
@@ -1412,6 +1518,14 @@
         <div class="crosshair-line-v"></div>
         <div class="crosshair-line-h"></div>
         <div class="target-aim-marker">▲</div>
+        <!-- 羅盤照準直結：リアルタイム吉凶HUDバッジ -->
+        <div class="aim-fortune-hud level-great" id="aimFortuneHud" title="現在照準している方位の吉凶">
+          <span class="hud-aim-arrow">▲</span>
+          <span id="hudKuaName">生気</span>
+          <span class="hud-kua-badge" id="hudKuaType">最大吉</span>
+          <span style="opacity:0.35;">|</span>
+          <span id="hudFenjinTag" style="font-size:0.72rem; color:#fef08a;">旺相線</span>
+        </div>
 
         <!-- 2D SVG天盤 -->
         <div class="luopan-dial-inner" id="luopanDial">
@@ -1445,6 +1559,7 @@
                 <div class="needle-fishtail-ring"></div>
               </div>
               <div class="needle-pivot-gem"></div>
+              <div class="needle-fortune-tag level-great" id="needleFortuneTag">最大吉</div>
             </div>
           </div>
         </div>
@@ -2862,6 +2977,24 @@
       if (evalData.level === "great") fortuneBanner.classList.add("banner-great-auspicious");
       else if (evalData.level === "good") fortuneBanner.classList.add("banner-auspicious");
       else fortuneBanner.classList.add("banner-ominous");
+
+      // 盤面照準HUD ＆ 磁針直結吉凶バッジのリアルタイム更新
+      const hudEl = document.getElementById("aimFortuneHud");
+      const hudKuaName = document.getElementById("hudKuaName");
+      const hudKuaType = document.getElementById("hudKuaType");
+      const needleTag = document.getElementById("needleFortuneTag");
+
+      if (hudKuaName) hudKuaName.textContent = evalData.name;
+      if (hudKuaType) hudKuaType.textContent = evalData.type;
+
+      if (needleTag) {
+        needleTag.textContent = `${evalData.name} ${evalData.type}`;
+        needleTag.className = `needle-fortune-tag level-${evalData.level}`;
+      }
+
+      if (hudEl) {
+        hudEl.className = `aim-fortune-hud level-${evalData.level}`;
+      }
     }
 
     function renderPrescriptions() {
