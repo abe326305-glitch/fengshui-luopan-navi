@@ -8,6 +8,8 @@
   <link rel="manifest" href="./manifest.json">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+  <link rel="canonical" href="./index.html">
+  <meta name="mobile-web-app-capable" content="yes">
 
   <title>大人の本格風水羅盤ナビ ｜ 3D立体工芸羅盤 ✕ 間取り気流シミュレーター</title>
   <meta name="description" content="スマホの電子コンパス＆3Dジャイロ連動。実物総合羅盤の3D立体鑑賞、部屋の気の流れを可視化する3D間取りシミュレーター、二十四山・八宅本命卦・AR透かし鑑定まで完備した世界初の本格風水Webアプリ。">
@@ -3515,7 +3517,7 @@ ${dilemma}
     // Service Worker 登録
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').then((reg) => {
+        navigator.serviceWorker.register('./sw.js', { scope: './' }).then((reg) => {
           console.log('SW registered:', reg.scope);
         }).catch((err) => {
           console.log('SW registration failed:', err);
