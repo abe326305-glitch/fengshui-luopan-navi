@@ -1,0 +1,3419 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  
+  <!-- PWA & Mobile Web App -->
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+
+  <title>大人の本格風水羅盤ナビ ｜ 3D立体工芸羅盤 ✕ 間取り気流シミュレーター</title>
+  <meta name="description" content="スマホの電子コンパス＆3Dジャイロ連動。実物総合羅盤の3D立体鑑賞、部屋の気の流れを可視化する3D間取りシミュレーター、二十四山・八宅本命卦・AR透かし鑑定まで完備した世界初の本格風水Webアプリ。">
+  <meta name="theme-color" content="#120c0e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Noto+Sans+JP:wght@300;400;500;700&family=Shippori+Mincho:wght@400;600;800&display=swap" rel="stylesheet">
+
+  <!-- Three.js (3Dグラフィックスライブラリ) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <style>
+    :root {
+      --bg-dark: #0a090c;
+      --bg-card: rgba(22, 19, 26, 0.9);
+      --bg-card-border: rgba(212, 175, 55, 0.3);
+      --lacquer-red: #781414;
+      --lacquer-red-light: #9c2226;
+      --gold-primary: #d4af37;
+      --gold-light: #f9e8a2;
+      --gold-dark: #8c6d1f;
+      --gold-bronze: #b59a57;
+      --red-bright: #e53e3e;
+      --green-good: #38a169;
+      --green-light: #9ae6b4;
+      --blue-good: #3182ce;
+      --blue-light: #bee3f8;
+      --text-main: #f5f4f0;
+      --text-sub: #a6a4ad;
+      --text-muted: #72707c;
+      --font-serif: 'Shippori Mincho', serif;
+      --font-eng: 'Cinzel', serif;
+      --font-sans: 'Noto Sans JP', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 10%, #25161d 0%, #0d0a0f 65%, #050406 100%);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-x: hidden;
+      padding-bottom: 70px;
+      position: relative;
+    }
+
+    /* カメラ映像オーバーレイ用背景（ARモード） */
+    #cameraVideo {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      z-index: 0;
+      display: none;
+      filter: brightness(0.68) contrast(1.1);
+    }
+    body.ar-mode #cameraVideo {
+      display: block;
+    }
+    body.ar-mode {
+      background: transparent;
+    }
+    body.ar-mode .app-container {
+      background: rgba(10, 8, 12, 0.45);
+      backdrop-filter: blur(4px);
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 520px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 16px;
+      position: relative;
+      z-index: 1;
+      transition: background 0.3s ease;
+    }
+
+    /* ヘッダー */
+    header {
+      width: 100%;
+      padding: 16px 0 8px;
+      text-align: center;
+      position: relative;
+    }
+    .top-meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 12px;
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      border: 1px solid var(--gold-primary);
+      color: var(--gold-light);
+      border-radius: 20px;
+      background: rgba(212, 175, 55, 0.12);
+    }
+    .sound-toggle-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      color: var(--gold-light);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: 1.42rem;
+      letter-spacing: 0.12em;
+      color: var(--gold-light);
+      text-shadow: 0 0 18px rgba(212, 175, 55, 0.45), 0 2px 4px #000;
+      margin-bottom: 3px;
+    }
+    .subtitle {
+      font-size: 0.78rem;
+      color: var(--text-sub);
+      letter-spacing: 0.06em;
+    }
+
+    /* 3大モード切り替えタブナビ（他にはない革新的UI） */
+    .mode-nav-tabs {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+      margin: 12px 0 14px;
+      background: rgba(18, 15, 22, 0.8);
+      padding: 4px;
+      border-radius: 14px;
+      border: 1px solid rgba(212, 175, 55, 0.25);
+    }
+    .mode-tab-btn {
+      padding: 9px 4px;
+      border-radius: 10px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-sub);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      transition: all 0.25s ease;
+    }
+    .mode-tab-btn span.tab-icon {
+      font-size: 1.15rem;
+    }
+    .mode-tab-btn.active {
+      background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(120, 20, 20, 0.35));
+      border-color: var(--gold-primary);
+      color: var(--gold-light);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+    }
+
+    /* リアルタイム測定値ヘッダーカード */
+    .reading-card {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--bg-card-border);
+      border-radius: 16px;
+      padding: 12px 18px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(12px);
+    }
+    .sensor-status-indicator {
+      font-size: 0.72rem;
+      color: var(--text-sub);
+      margin-bottom: 10px;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 3px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.25s ease;
+    }
+    .sensor-status-indicator.tracking {
+      color: #86efac;
+      border-color: rgba(72, 187, 120, 0.45);
+      background: rgba(20, 50, 30, 0.5);
+    }
+    .sensor-status-indicator.manual {
+      color: #fde047;
+      border-color: rgba(234, 179, 8, 0.45);
+      background: rgba(45, 38, 15, 0.5);
+    }
+    .reading-deg-group {
+      display: flex;
+      flex-direction: column;
+    }
+    .deg-value {
+      font-family: var(--font-eng);
+      font-size: 2.3rem;
+      font-weight: 900;
+      color: var(--gold-light);
+      line-height: 1;
+      letter-spacing: -0.02em;
+      text-shadow: 0 0 12px rgba(212, 175, 55, 0.4);
+    }
+    .deg-dir-label {
+      font-size: 0.76rem;
+      color: var(--text-sub);
+      margin-top: 3px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .reading-mountain-group {
+      text-align: right;
+    }
+    .mountain-name-large {
+      font-family: var(--font-serif);
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: 0.08em;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    }
+    .mountain-detail {
+      font-size: 0.74rem;
+      color: var(--gold-primary);
+      margin-top: 2px;
+    }
+
+    /* ==========================================================
+       ビュー1: 2D精密羅盤フレーム（高級電木 朱漆ベークライト仕様）
+       ========================================================== */
+    .view-section {
+      width: 100%;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+    }
+    .view-section.active {
+      display: flex;
+    }
+
+    .luopan-frame {
+      position: relative;
+      width: 350px;
+      height: 350px;
+      max-width: 92vw;
+      max-height: 92vw;
+      margin: 4px 0 12px;
+      background: radial-gradient(circle at 40% 30%, #9e2327 0%, #681010 45%, #380707 90%, #200404 100%);
+      border-radius: 24px;
+      box-shadow: 
+        0 18px 45px rgba(0, 0, 0, 0.85),
+        inset 0 2px 4px rgba(255, 255, 255, 0.25),
+        inset 0 -4px 10px rgba(0, 0, 0, 0.8),
+        0 0 0 2px #420808,
+        0 0 0 3.5px var(--gold-dark);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      user-select: none;
+      touch-action: none;
+    }
+    @media (max-width: 380px) {
+      .luopan-frame {
+        width: 310px;
+        height: 310px;
+        border-radius: 20px;
+      }
+    }
+
+    /* 四隅の真鍮コーナー金具 */
+    .corner-brass {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      pointer-events: none;
+      z-index: 5;
+    }
+    .corner-tl { top: 6px; left: 6px; border-top: 2px solid var(--gold-primary); border-left: 2px solid var(--gold-primary); border-top-left-radius: 12px; }
+    .corner-tr { top: 6px; right: 6px; border-top: 2px solid var(--gold-primary); border-right: 2px solid var(--gold-primary); border-top-right-radius: 12px; }
+    .corner-bl { bottom: 6px; left: 6px; border-bottom: 2px solid var(--gold-primary); border-left: 2px solid var(--gold-primary); border-bottom-left-radius: 12px; }
+    .corner-br { bottom: 6px; right: 6px; border-bottom: 2px solid var(--gold-primary); border-right: 2px solid var(--gold-primary); border-bottom-right-radius: 12px; }
+
+    /* 左上金箔銘板 */
+    .luopan-label-plate {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(140, 109, 31, 0.45));
+      border: 1px solid var(--gold-light);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.58rem;
+      color: var(--gold-light);
+      letter-spacing: 0.1em;
+      font-family: var(--font-serif);
+      font-weight: 600;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+      z-index: 6;
+      pointer-events: none;
+    }
+
+    /* 右下：水平気泡水準器（水準管） */
+    .spirit-level {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      background: #120f14;
+      border: 1.5px solid var(--gold-primary);
+      border-radius: 16px;
+      padding: 3px 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.8), inset 0 0 5px rgba(0,0,0,0.9);
+      z-index: 6;
+      font-size: 0.62rem;
+      color: var(--gold-light);
+    }
+    .level-tube {
+      position: relative;
+      width: 44px;
+      height: 12px;
+      background: linear-gradient(to bottom, #1d4022, #2d6a36);
+      border-radius: 6px;
+      border: 1px solid #48bb78;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .level-center-mark {
+      position: absolute;
+      width: 14px;
+      height: 100%;
+      border-left: 1px dashed rgba(255, 255, 255, 0.6);
+      border-right: 1px dashed rgba(255, 255, 255, 0.6);
+      pointer-events: none;
+    }
+    .level-bubble {
+      position: absolute;
+      width: 10px;
+      height: 8px;
+      background: radial-gradient(circle, #bbf7d0 0%, #48bb78 100%);
+      border-radius: 50%;
+      box-shadow: 0 0 4px #bbf7d0;
+      transform: translate(0, 0);
+      transition: transform 0.08s ease-out;
+    }
+    .level-status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #718096;
+      box-shadow: 0 0 3px #718096;
+      transition: all 0.2s ease;
+    }
+    .level-status-dot.level-ok {
+      background: #48bb78;
+      box-shadow: 0 0 7px #48bb78;
+    }
+
+    /* 赤い十字天心糸 */
+    .crosshair-line-v, .crosshair-line-h {
+      position: absolute;
+      background: rgba(235, 45, 45, 0.85);
+      z-index: 15;
+      pointer-events: none;
+      box-shadow: 0 0 4px rgba(229, 62, 62, 0.5);
+    }
+    .crosshair-line-v { top: 0; bottom: 0; left: 50%; width: 1.2px; transform: translateX(-50%); }
+    .crosshair-line-h { left: 0; right: 0; top: 50%; height: 1.2px; transform: translateY(-50%); }
+    .target-aim-marker {
+      position: absolute;
+      top: 7px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+      color: var(--red-bright);
+      font-size: 1.15rem;
+      filter: drop-shadow(0 0 5px var(--red-bright));
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    /* 回転する天盤（内盤円形） */
+    .luopan-dial-inner {
+      position: relative;
+      width: 310px;
+      height: 310px;
+      max-width: 82vw;
+      max-height: 82vw;
+      border-radius: 50%;
+      background: #0d0c11;
+      box-shadow: 
+        0 0 25px rgba(0, 0, 0, 0.95),
+        inset 0 0 20px rgba(0, 0, 0, 0.9),
+        0 0 0 1.5px var(--gold-primary);
+      cursor: grab;
+      transform-origin: center center;
+      transition: transform 0.12s cubic-bezier(0.1, 0.85, 0.25, 1);
+    }
+    .luopan-dial-inner:active { cursor: grabbing; }
+    @media (max-width: 380px) {
+      .luopan-dial-inner { width: 275px; height: 275px; }
+    }
+    .luopan-svg-canvas { width: 100%; height: 100%; display: block; transform-origin: center center; }
+
+    /* 中央の天池（ガラスドーム＆真鍮磁針） */
+    .tianchi-capsule {
+      position: absolute;
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 40% 35%, #2a2533 0%, #100e15 80%);
+      border: 2.5px solid var(--gold-primary);
+      box-shadow: 
+        0 0 14px rgba(212, 175, 55, 0.5),
+        inset 0 0 10px rgba(0, 0, 0, 0.95),
+        inset 0 2px 3px rgba(255, 255, 255, 0.35);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 18;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      pointer-events: none;
+    }
+    .tianchi-seabed-line {
+      position: absolute;
+      width: 1px;
+      height: 48px;
+      background: rgba(229, 62, 62, 0.7);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .compass-needle-needle {
+      position: absolute;
+      width: 6px;
+      height: 46px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+    }
+    .needle-half-north {
+      position: absolute;
+      top: 0; left: 0; width: 0; height: 0;
+      border-left: 3px solid transparent; border-right: 3px solid transparent; border-bottom: 23px solid #e53e3e;
+      filter: drop-shadow(0 0 4px rgba(229, 62, 62, 0.9));
+    }
+    .needle-half-south {
+      position: absolute;
+      bottom: 0; left: 0; width: 0; height: 0;
+      border-left: 3px solid transparent; border-right: 3px solid transparent; border-top: 23px solid #e2e8f0;
+    }
+    .needle-pivot-gem {
+      position: absolute;
+      width: 9px; height: 9px;
+      background: radial-gradient(circle, #fef08a 0%, #b45309 100%);
+      border: 1px solid #fff; border-radius: 50%;
+      top: 50%; left: 50%; transform: translate(-50%, -50%);
+      box-shadow: 0 0 5px rgba(0,0,0,0.9);
+    }
+
+    /* ==========================================================
+       ビュー2: 3D立体工芸羅盤（Three.js WebGLキャンバス）
+       ========================================================== */
+    .three-canvas-container {
+      position: relative;
+      width: 350px;
+      height: 350px;
+      max-width: 92vw;
+      max-height: 92vw;
+      margin: 4px 0 12px;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 0 2px var(--gold-primary);
+      background: radial-gradient(circle at 50% 50%, #1e1924, #08060a);
+      touch-action: none;
+    }
+    #threeLuopanCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .three-overlay-hint {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.65);
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 0.68rem;
+      color: var(--gold-light);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    /* ==========================================================
+       ビュー3: 3D間取り・気の流れ実験室（3D Feng Shui Studio）
+       ========================================================== */
+    .studio-card {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--bg-card-border);
+      border-radius: 18px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+    }
+    .room-3d-canvas-box {
+      position: relative;
+      width: 100%;
+      height: 280px;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1.5px solid rgba(212, 175, 55, 0.35);
+      background: radial-gradient(circle at 50% 40%, #1f1b2c 0%, #0a0810 100%);
+      margin-bottom: 12px;
+      box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.9);
+      touch-action: none;
+    }
+    #studioCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .score-badge-overlay {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(14, 12, 18, 0.85);
+      border: 1px solid var(--gold-primary);
+      border-radius: 10px;
+      padding: 6px 10px;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+    }
+    .score-number {
+      font-family: var(--font-eng);
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #bbf7d0;
+      line-height: 1;
+    }
+    .score-label {
+      font-size: 0.65rem;
+      color: var(--text-sub);
+    }
+
+    /* 3Dスタジオ操作パネル */
+    .studio-controls-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .studio-btn {
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(212, 175, 55, 0.25);
+      color: var(--text-main);
+      font-size: 0.75rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+    }
+    .studio-btn:hover, .studio-btn.active {
+      background: rgba(212, 175, 55, 0.18);
+      border-color: var(--gold-primary);
+      color: var(--gold-light);
+    }
+    .studio-diagnosis-box {
+      background: rgba(0, 0, 0, 0.35);
+      border-left: 3px solid #38a169;
+      border-radius: 0 8px 8px 0;
+      padding: 8px 12px;
+      font-size: 0.76rem;
+      line-height: 1.5;
+    }
+    .studio-diagnosis-box strong {
+      color: var(--gold-light);
+    }
+
+    /* 主要アクションボタン（2列） */
+    .action-grid {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      margin-bottom: 10px;
+    }
+    .btn {
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      transition: all 0.2s ease;
+      border: none;
+      outline: none;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    }
+    .btn-compass {
+      background: linear-gradient(135deg, var(--lacquer-red-light) 0%, #681010 100%);
+      color: #fff;
+      border: 1px solid rgba(229, 62, 62, 0.4);
+      box-shadow: 0 4px 15px rgba(156, 34, 38, 0.4);
+    }
+    .btn-compass.active {
+      background: linear-gradient(135deg, #2b6cb0, #1a365d);
+      border-color: #63b3ed;
+      box-shadow: 0 4px 15px rgba(49, 130, 206, 0.45);
+    }
+    .btn-ar {
+      background: linear-gradient(135deg, #2d3748, #1a202c);
+      color: var(--gold-light);
+      border: 1px solid rgba(212, 175, 55, 0.35);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+    }
+    .btn-ar.active {
+      background: linear-gradient(135deg, #744210, #b7791f);
+      color: #fff;
+      border-color: var(--gold-light);
+    }
+    .btn-hold {
+      background: rgba(30, 28, 38, 0.85);
+      color: var(--gold-light);
+      border: 1px solid var(--gold-bronze);
+    }
+    .btn-hold.active {
+      background: var(--gold-dark);
+      color: #fff;
+      border-color: var(--gold-light);
+    }
+    .btn-record {
+      background: linear-gradient(135deg, #234e52, #1d4044);
+      color: #e6fffa;
+      border: 1px solid #319795;
+    }
+
+    /* 手動ダイヤルスライダー */
+    .slider-card {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .slider-title-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.73rem;
+      color: var(--text-sub);
+    }
+    .angle-range-input {
+      width: 100%;
+      height: 6px;
+      -webkit-appearance: none;
+      background: #25232d;
+      border-radius: 3px;
+      outline: none;
+    }
+    .angle-range-input::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--gold-primary);
+      border: 2px solid #fff;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(212, 175, 55, 0.7);
+    }
+    .nudge-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+      margin-top: 2px;
+    }
+    .nudge-btn {
+      flex: 1;
+      padding: 5px 0;
+      font-size: 0.72rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-sub);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .nudge-btn:hover {
+      color: var(--gold-light);
+      border-color: var(--gold-primary);
+      background: rgba(212, 175, 55, 0.1);
+    }
+
+    /* 本命卦（八宅風水）自動判定シミュレーター */
+    .kua-card {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--bg-card-border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(10px);
+    }
+    .kua-top-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .section-headline {
+      font-family: var(--font-serif);
+      font-size: 0.98rem;
+      color: var(--gold-light);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .kua-calc-form {
+      display: grid;
+      grid-template-columns: 2fr 1fr auto;
+      gap: 8px;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(212, 175, 55, 0.2);
+      margin-bottom: 10px;
+    }
+    .calc-select {
+      background: #18151f;
+      border: 1px solid var(--gold-bronze);
+      color: var(--gold-light);
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      outline: none;
+    }
+    .btn-calc {
+      background: linear-gradient(135deg, var(--gold-primary), var(--gold-dark));
+      color: #120e06;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* 本命卦情報バッジ */
+    .kua-profile-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(212, 175, 55, 0.08);
+      border-left: 3px solid var(--gold-primary);
+      padding: 7px 12px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 10px;
+      font-size: 0.8rem;
+    }
+    .kua-group-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+    .group-west {
+      background: rgba(214, 158, 46, 0.25);
+      color: #f6e05e;
+      border: 1px solid #d69e2e;
+    }
+    .group-east {
+      background: rgba(72, 187, 120, 0.25);
+      color: #9ae6b4;
+      border: 1px solid #48bb78;
+    }
+
+    /* 現在方位の吉凶バナー */
+    .fortune-banner {
+      padding: 12px 14px;
+      border-radius: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+    .banner-great-auspicious {
+      background: linear-gradient(135deg, rgba(39, 103, 73, 0.55), rgba(18, 54, 36, 0.85));
+      border: 1.5px solid #48bb78;
+      color: #bbf7d0;
+    }
+    .banner-auspicious {
+      background: linear-gradient(135deg, rgba(43, 108, 176, 0.45), rgba(26, 54, 93, 0.8));
+      border: 1.5px solid #4299e1;
+      color: #bee3f8;
+    }
+    .banner-ominous {
+      background: linear-gradient(135deg, rgba(155, 44, 44, 0.55), rgba(74, 14, 14, 0.85));
+      border: 1.5px solid #f56565;
+      color: #fed7d7;
+    }
+    .fortune-name-large {
+      font-family: var(--font-serif);
+      font-size: 1.25rem;
+      font-weight: 800;
+    }
+    .fortune-desc-text {
+      font-size: 0.74rem;
+      margin-top: 3px;
+      opacity: 0.9;
+    }
+    .fortune-type-pill {
+      font-size: 0.78rem;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: rgba(0, 0, 0, 0.45);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    /* 部屋別インテリア・化殺処方箋タブ */
+    .advice-card {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--bg-card-border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    }
+    .room-tabs-scroller {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 12px;
+      scrollbar-width: none;
+    }
+    .room-tabs-scroller::-webkit-scrollbar { display: none; }
+    .room-tab-btn {
+      padding: 7px 12px;
+      font-size: 0.78rem;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid transparent;
+      color: var(--text-sub);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+    .room-tab-btn.active {
+      background: rgba(212, 175, 55, 0.18);
+      border-color: var(--gold-primary);
+      color: var(--gold-light);
+      font-weight: 600;
+    }
+    .prescription-item {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.82rem;
+      line-height: 1.5;
+      margin-bottom: 8px;
+    }
+    .prescription-icon { font-size: 1.15rem; flex-shrink: 0; margin-top: 1px; }
+    .prescription-body strong { color: var(--gold-light); font-size: 0.86rem; }
+    .prescription-body p { color: var(--text-sub); margin-top: 3px; }
+
+    /* ==========================================================
+       AI（ChatGPT/Gemini/Claude）風水相談プロンプトボックス
+       ========================================================== */
+    .prompt-box {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--gold-primary);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), 0 0 20px rgba(212, 175, 55, 0.15);
+    }
+    .prompt-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .prompt-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--gold-light);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .copy-btn {
+      padding: 5px 14px;
+      background: linear-gradient(135deg, #d4af37 0%, #b59a57 100%);
+      color: #0b090e;
+      font-weight: 800;
+      font-size: 0.75rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 3px 10px rgba(212, 175, 55, 0.3);
+      transition: all 0.2s ease;
+    }
+    .copy-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 5px 15px rgba(212, 175, 55, 0.5);
+    }
+    .dilemma-textarea {
+      width: 100%;
+      height: 74px;
+      background: rgba(10, 8, 14, 0.85);
+      border: 1px solid rgba(212, 175, 55, 0.35);
+      border-radius: 8px;
+      color: var(--text-main);
+      font-size: 0.84rem;
+      padding: 9px 12px;
+      font-family: inherit;
+      resize: vertical;
+      box-sizing: border-box;
+      line-height: 1.5;
+      margin-bottom: 10px;
+      transition: border 0.2s ease, box-shadow 0.2s ease;
+    }
+    .dilemma-textarea:focus {
+      outline: none;
+      border-color: var(--gold-light);
+      box-shadow: 0 0 12px rgba(212, 175, 55, 0.35);
+    }
+    .prompt-preview {
+      font-size: 0.78rem;
+      color: var(--text-sub);
+      background: rgba(8, 6, 12, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 12px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-all;
+      user-select: text;
+      -webkit-user-select: text;
+      max-height: 170px;
+      overflow-y: auto;
+      cursor: pointer;
+    }
+    .ai-links {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .ai-link-btn {
+      flex: 1;
+      padding: 8px 6px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      border-radius: 8px;
+      color: var(--gold-light);
+      font-size: 0.74rem;
+      font-weight: 600;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: all 0.2s ease;
+    }
+    .ai-link-btn:hover {
+      background: rgba(212, 175, 55, 0.2);
+      border-color: var(--gold-primary);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    /* わが家の風水鑑定カルテ */
+    .record-card {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--bg-card-border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    }
+    .record-actions-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .record-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .record-empty-notice {
+      text-align: center;
+      padding: 18px 0;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+    .record-item-card {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(212, 175, 55, 0.2);
+      border-radius: 8px;
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+    }
+    .record-item-info { display: flex; flex-direction: column; gap: 2px; }
+    .record-place-badge { font-weight: 700; color: var(--gold-light); }
+    .record-detail-sub { font-size: 0.72rem; color: var(--text-sub); }
+    .record-delete-btn { background: none; border: none; color: #e53e3e; cursor: pointer; font-size: 0.9rem; padding: 4px; }
+
+    /* ミニガイドモーダル */
+    .modal-backdrop {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-box {
+      background: #17141d;
+      border: 1px solid var(--gold-primary);
+      border-radius: 18px;
+      max-width: 460px;
+      width: 100%;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 22px 20px;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.9);
+      position: relative;
+    }
+    .modal-close-btn {
+      position: absolute; top: 14px; right: 14px;
+      background: rgba(255, 255, 255, 0.1); border: none; color: #fff;
+      width: 28px; height: 28px; border-radius: 50%;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem;
+    }
+    .modal-body h3 {
+      font-family: var(--font-serif); color: var(--gold-light);
+      margin: 16px 0 6px; font-size: 1rem; border-bottom: 1px solid rgba(212, 175, 55, 0.3); padding-bottom: 4px;
+    }
+    .modal-body p, .modal-body li { font-size: 0.8rem; color: var(--text-sub); line-height: 1.6; }
+    .modal-body ol, .modal-body ul { padding-left: 20px; margin: 6px 0; }
+
+    footer {
+      width: 100%;
+      text-align: center;
+      padding: 24px 0 10px;
+      font-size: 0.74rem;
+      color: var(--text-muted);
+    }
+  
+    /* ==========================================================
+       本物志向：高級電木三元三合綜合羅盤 ＆ 全画面没入スタイル
+       ========================================================== */
+    .corner-brass {
+      position: absolute;
+      width: 36px;
+      height: 36px;
+      pointer-events: none;
+      z-index: 5;
+    }
+    .corner-tl { 
+      top: 6px; left: 6px; 
+      border-top: 3px solid var(--gold-light); border-left: 3px solid var(--gold-light); 
+      border-top-left-radius: 14px; 
+      box-shadow: inset 2px 2px 0 var(--gold-dark), 0 0 8px rgba(212, 175, 55, 0.45);
+    }
+    .corner-tl::after { content: ''; position: absolute; top: 4px; left: 4px; width: 4px; height: 4px; background: var(--gold-light); border-radius: 50%; box-shadow: 0 0 3px #000; }
+    
+    .corner-tr { 
+      top: 6px; right: 6px; 
+      border-top: 3px solid var(--gold-light); border-right: 3px solid var(--gold-light); 
+      border-top-right-radius: 14px; 
+      box-shadow: inset -2px 2px 0 var(--gold-dark), 0 0 8px rgba(212, 175, 55, 0.45);
+    }
+    .corner-tr::after { content: ''; position: absolute; top: 4px; right: 4px; width: 4px; height: 4px; background: var(--gold-light); border-radius: 50%; box-shadow: 0 0 3px #000; }
+    
+    .corner-bl { 
+      bottom: 6px; left: 6px; 
+      border-bottom: 3px solid var(--gold-light); border-left: 3px solid var(--gold-light); 
+      border-bottom-left-radius: 14px; 
+      box-shadow: inset 2px -2px 0 var(--gold-dark), 0 0 8px rgba(212, 175, 55, 0.45);
+    }
+    .corner-bl::after { content: ''; position: absolute; bottom: 4px; left: 4px; width: 4px; height: 4px; background: var(--gold-light); border-radius: 50%; box-shadow: 0 0 3px #000; }
+    
+    .corner-br { 
+      bottom: 6px; right: 6px; 
+      border-bottom: 3px solid var(--gold-light); border-right: 3px solid var(--gold-light); 
+      border-bottom-right-radius: 14px; 
+      box-shadow: inset -2px -2px 0 var(--gold-dark), 0 0 8px rgba(212, 175, 55, 0.45);
+    }
+    .corner-br::after { content: ''; position: absolute; bottom: 4px; right: 4px; width: 4px; height: 4px; background: var(--gold-light); border-radius: 50%; box-shadow: 0 0 3px #000; }
+
+    /* 左上銘板（三元三合綜合羅盤） */
+    .luopan-label-plate {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: linear-gradient(135deg, rgba(212, 175, 55, 0.35), rgba(90, 68, 16, 0.75));
+      border: 1.2px solid var(--gold-light);
+      padding: 3px 8px;
+      border-radius: 5px;
+      font-size: 0.62rem;
+      color: var(--gold-light);
+      letter-spacing: 0.12em;
+      font-family: var(--font-serif);
+      font-weight: 700;
+      text-shadow: 0 1px 2px #000;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255,255,255,0.3);
+      z-index: 6;
+      pointer-events: none;
+      line-height: 1.3;
+    }
+
+    /* 右上全画面切り替えボタン */
+    .btn-fullscreen-toggle {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(18, 15, 22, 0.85);
+      border: 1px solid var(--gold-primary);
+      border-radius: 8px;
+      padding: 3px 8px;
+      color: var(--gold-light);
+      font-size: 0.68rem;
+      cursor: pointer;
+      z-index: 25;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+      transition: all 0.2s ease;
+    }
+    .btn-fullscreen-toggle:hover {
+      background: rgba(212, 175, 55, 0.25);
+    }
+
+    /* 天池：海底両点（北極双紅点） */
+    .tianchi-seabed-dots {
+      position: absolute;
+      top: 7px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 10px;
+      height: 3px;
+      display: flex;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+    .tianchi-seabed-dots::before, .tianchi-seabed-dots::after {
+      content: '';
+      width: 2.5px;
+      height: 2.5px;
+      border-radius: 50%;
+      background: #e53e3e;
+      box-shadow: 0 0 3px #e53e3e;
+    }
+
+    /* 伝統指南針南針のフィッシュテール意匠 */
+    .needle-fishtail-ring {
+      position: absolute;
+      bottom: -3px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 7px;
+      height: 7px;
+      border: 1.2px solid #cbd5e1;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.5);
+    }
+
+    /* リアルタイム坐向＆分金行 */
+    .zuoxiang-row {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px dashed rgba(212, 175, 55, 0.25);
+    }
+    .badge-zuoxiang {
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: var(--gold-light);
+      background: rgba(120, 20, 20, 0.35);
+      border: 1px solid rgba(229, 62, 62, 0.4);
+      padding: 2px 8px;
+      border-radius: 6px;
+      letter-spacing: 0.05em;
+    }
+    .badge-fenjin {
+      font-size: 0.74rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 6px;
+      letter-spacing: 0.05em;
+    }
+    .badge-fenjin.wangxiang {
+      color: #fef08a;
+      background: rgba(180, 83, 9, 0.35);
+      border: 1px solid #f59e0b;
+      box-shadow: 0 0 6px rgba(245, 158, 11, 0.3);
+    }
+    .badge-fenjin.kongwang {
+      color: #fca5a5;
+      background: rgba(153, 27, 27, 0.4);
+      border: 1px solid #ef4444;
+    }
+    .badge-fenjin.guxu {
+      color: #cbd5e1;
+      background: rgba(55, 65, 81, 0.4);
+      border: 1px solid #6b7280;
+    }
+
+    /* スマホ全画面羅盤モード */
+    body.fullscreen-luopan-mode header,
+    body.fullscreen-luopan-mode .mode-nav-tabs,
+    body.fullscreen-luopan-mode .slider-card,
+    body.fullscreen-luopan-mode .action-grid,
+    body.fullscreen-luopan-mode .kua-report-card,
+    body.fullscreen-luopan-mode footer {
+      display: none !important;
+    }
+    body.fullscreen-luopan-mode .app-container {
+      padding: 6px;
+      justify-content: center;
+    }
+    body.fullscreen-luopan-mode .luopan-frame {
+      width: 96vw !important;
+      height: 96vw !important;
+      max-width: 500px !important;
+      max-height: 500px !important;
+      margin: 8px 0;
+    }
+    body.fullscreen-luopan-mode .luopan-dial-inner {
+      width: 86vw !important;
+      height: 86vw !important;
+      max-width: 440px !important;
+      max-height: 440px !important;
+    }
+
+</style>
+</head>
+<body>
+
+  <!-- ARカメラ用映像ビデオ -->
+  <video id="cameraVideo" autoplay playsinline muted></video>
+
+  <div class="app-container">
+    <header>
+      <div class="top-meta-row">
+        <div class="badge">
+          <span>🏛️</span>
+          <span>KINDLE読者限定 総合羅盤</span>
+        </div>
+        <button class="sound-toggle-btn" id="btnSound" title="音声切り替え">
+          <span>🔔</span> <span id="soundText">音: ON</span>
+        </button>
+      </div>
+      <h1>大人の本格風水羅盤ナビ</h1>
+      <div class="subtitle">3D立体工芸羅盤 ✕ 間取り気流シミュレーター ✕ 八宅風水鑑定</div>
+    </header>
+
+    <!-- 3大革新モード切り替えタブ -->
+    <div class="mode-nav-tabs">
+      <button class="mode-tab-btn active" data-view="view2d">
+        <span class="tab-icon">🧭</span>
+        <span>2D精密羅盤 & AR</span>
+      </button>
+      <button class="mode-tab-btn" data-view="view3d">
+        <span class="tab-icon">🪐</span>
+        <span>3D立体工芸羅盤</span>
+      </button>
+      <button class="mode-tab-btn" data-view="viewStudio">
+        <span class="tab-icon">🏠</span>
+        <span>3D間取り気流実験室</span>
+      </button>
+    </div>
+
+    <!-- リアルタイム測定値ヘッダーカード -->
+    <div class="reading-card">
+      <div class="reading-deg-group">
+        <span class="deg-value" id="dispDegree">0°</span>
+        <span class="deg-dir-label">
+          <span id="dispEightDir">北 (正北)</span>
+          <span style="opacity: 0.6;">｜</span>
+          <span id="dispKuaGroup">東四方位</span>
+        </span>
+      </div>
+      <div class="reading-mountain-group">
+        <div class="mountain-name-large" id="dispMountain">子山</div>
+        <div class="mountain-detail" id="dispWuxing">五行：水 ｜ 陰陽：陽水</div>
+      </div>
+      <div class="zuoxiang-row">
+        <span class="badge-zuoxiang" id="dispZuoXiang">坐午向子 (背南朝北)</span>
+        <span class="badge-fenjin wangxiang" id="dispFenJin">丙子分金 (旺相・大吉線)</span>
+      </div>
+    </div>
+
+    <!-- センサー・手動ステータスインジケータ -->
+    <div class="sensor-status-indicator" id="sensorStatusIndicator">
+      <span>📡</span> <span>手動シミュレーション中（ダイヤル・指で回転可能）</span>
+    </div>
+
+    <!-- ========================================================
+         ビュー1: 2D精密羅盤 ＆ AR透かし
+         ======================================================== -->
+    <div class="view-section active" id="view2d">
+      <div class="luopan-frame" id="luopanFrameArea">
+        <div class="corner-brass corner-tl"></div>
+        <div class="corner-brass corner-tr"></div>
+        <div class="corner-brass corner-bl"></div>
+        <div class="corner-brass corner-br"></div>
+        <div class="luopan-label-plate">採用高級電木<br>三元三合綜合羅盤</div>
+        <button class="btn-fullscreen-toggle" id="btnFullscreenToggle" title="羅盤全画面表示切替">
+          <span>⛶</span><span>全画面</span>
+        </button>
+
+        <!-- 水平気泡水準器 -->
+        <div class="spirit-level" id="spiritLevel" title="羅盤の水平状態を検知">
+          <span>水平</span>
+          <div class="level-tube">
+            <div class="level-center-mark"></div>
+            <div class="level-bubble" id="levelBubble"></div>
+          </div>
+          <div class="level-status-dot" id="levelDot"></div>
+        </div>
+
+        <div class="crosshair-line-v"></div>
+        <div class="crosshair-line-h"></div>
+        <div class="target-aim-marker">▲</div>
+
+        <!-- 2D SVG天盤 -->
+        <div class="luopan-dial-inner" id="luopanDial">
+          <svg class="luopan-svg-canvas" viewBox="0 0 600 600" id="luopanSvg">
+            <defs>
+              <radialGradient id="dialBgGrad" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#241e2b"/>
+                <stop offset="65%" stop-color="#121017"/>
+                <stop offset="100%" stop-color="#070609"/>
+              </radialGradient>
+            </defs>
+            <circle cx="300" cy="300" r="294" fill="url(#dialBgGrad)" stroke="#d4af37" stroke-width="4"/>
+            <circle cx="300" cy="300" r="288" fill="none" stroke="#d4af37" stroke-width="1.2" stroke-dasharray="3,3"/>
+            <g id="svgDegreeRing"></g>
+            <g id="svgConstellationRing"></g>
+            <g id="svgFenjinRing"></g>
+            <g id="svgHuangquanRing"></g>
+            <g id="svgSolarTermsRing"></g>
+            <g id="svgMountainRing"></g>
+            <g id="svgBaguaRing"></g>
+            <g id="svgNineStarsRing"></g>
+            <circle cx="300" cy="300" r="85" fill="#14111a" stroke="#d4af37" stroke-width="2.5"/>
+            <circle cx="300" cy="300" r="50" fill="#0d0a11" stroke="#8c6d1f" stroke-width="1.5"/>
+          </svg>
+          <div class="tianchi-capsule">
+            <div class="tianchi-seabed-line"></div>
+            <div class="tianchi-seabed-dots" title="海底両点（北極双紅点）"></div>
+            <div class="compass-needle-needle" id="compassNeedleElement">
+              <div class="needle-half-north"></div>
+              <div class="needle-half-south">
+                <div class="needle-fishtail-ring"></div>
+              </div>
+              <div class="needle-pivot-gem"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================
+         ビュー2: 3D立体工芸羅盤（Three.js PBRマテリアル＆ジャイロ）
+         ======================================================== -->
+    <div class="view-section" id="view3d">
+      <div class="three-canvas-container" id="threeLuopanWrapper">
+        <canvas id="threeLuopanCanvas"></canvas>
+        <div class="three-overlay-hint">👆 ドラッグで3D自由視点 ｜ スマホの傾き連動</div>
+      </div>
+    </div>
+
+    <!-- ========================================================
+         ビュー3: 3D間取り・気の流れ実験室（3D Feng Shui Studio）
+         ======================================================== -->
+    <div class="view-section" id="viewStudio">
+      <div class="studio-card">
+        <div class="room-3d-canvas-box">
+          <canvas id="studioCanvas"></canvas>
+          <div class="score-badge-overlay">
+            <div class="score-number" id="studioScoreNumber">88点</div>
+            <div class="score-label" id="studioScoreRank">✨ 大吉空間（調和度 極）</div>
+          </div>
+        </div>
+
+        <!-- 家具・化殺アイテム配置コントローラー -->
+        <div class="studio-controls-grid">
+          <button class="studio-btn" id="btnRotateBed">🛏️ ベッド向き回転</button>
+          <button class="studio-btn" id="btnRotateDesk">💻 デスク向き回転</button>
+          <button class="studio-btn" id="btnTogglePlant">🪴 観葉植物 (化殺)</button>
+          <button class="studio-btn" id="btnToggleBell">🔔 真鍮風鈴 (金気)</button>
+        </div>
+
+        <div class="studio-diagnosis-box" id="studioDiagnosisText">
+          <strong>【3D気流リアルタイム診断】</strong><br>
+          現在デスクが「生気（最大吉方位）」を向いており、仕事運・金運の光流が強力に循環しています。
+        </div>
+      </div>
+    </div>
+
+    <!-- 主要操作ボタングリッド -->
+    <div class="action-grid">
+      <button class="btn btn-compass" id="btnCompass">
+        <span>🧭</span> <span id="sensorBtnLabel">コンパス開始</span>
+      </button>
+      <button class="btn btn-ar" id="btnAR">
+        <span>📷</span> <span id="arBtnLabel">カメラ透かし鑑定</span>
+      </button>
+      <button class="btn btn-hold" id="btnHold">
+        <span>🔒</span> <span id="holdBtnLabel">測定値を固定</span>
+      </button>
+      <button class="btn btn-record" id="btnRecord">
+        <span>📝</span> <span>カルテに記録</span>
+      </button>
+    </div>
+
+    <!-- 手動微調整スライダー＆ナッジボタン -->
+    <div class="slider-card">
+      <div class="slider-title-row">
+        <span>手動シミュレーション／微調整ダイヤル</span>
+        <span id="sliderValDisplay" style="color: var(--gold-light); font-weight:700;">0°</span>
+      </div>
+      <input type="range" min="0" max="359" value="0" class="angle-range-input" id="angleRange">
+      <div class="nudge-row">
+        <button class="nudge-btn" data-nudge="-15">-15° (前山)</button>
+        <button class="nudge-btn" data-nudge="-1">-1°</button>
+        <button class="nudge-btn" data-nudge="1">+1°</button>
+        <button class="nudge-btn" data-nudge="15">+15° (次山)</button>
+      </div>
+    </div>
+
+    <!-- 本命卦（八宅風水）自動判定シミュレーター -->
+    <div class="kua-card">
+      <div class="kua-top-header">
+        <div class="section-headline">
+          <span>🏛️</span> あなたの本命卦（八宅風水鑑定）
+        </div>
+        <button id="btnOpenGuide" style="background:none; border:none; color:var(--gold-primary); font-size:0.75rem; cursor:pointer; text-decoration:underline;">
+          風水の使い方 ❓
+        </button>
+      </div>
+
+      <div class="kua-calc-form">
+        <select class="calc-select" id="birthYearSelect" title="生まれた年（西暦）"></select>
+        <select class="calc-select" id="genderSelect" title="性別">
+          <option value="male">男性</option>
+          <option value="female">女性</option>
+        </select>
+        <button class="btn-calc" id="btnCalculateKua">本命卦を判定</button>
+      </div>
+
+      <div class="kua-profile-row">
+        <div>
+          <span>あなたの本命卦：</span>
+          <strong id="kuaNameDisplay" style="color: var(--gold-light); font-size:0.95rem;">乾命 (けんめい)</strong>
+          <span id="kuaElementDisplay" style="color: var(--text-sub); font-size:0.75rem; margin-left:4px;">五行：金</span>
+        </div>
+        <span class="kua-group-badge group-west" id="kuaGroupBadge">西四命</span>
+      </div>
+
+      <div class="fortune-banner banner-great-auspicious" id="fortuneBanner">
+        <div>
+          <div class="fortune-name-large" id="fortuneTitle">生気（大吉方位）</div>
+          <div class="fortune-desc-text" id="fortuneDesc">最強のバイタリティ・財運の流入・新規事業の成功</div>
+        </div>
+        <div class="fortune-type-pill" id="fortuneLevelPill">最大吉</div>
+      </div>
+    </div>
+
+    <!-- 部屋別インテリア・化殺処方箋タブ -->
+    <div class="advice-card">
+      <div class="room-tabs-scroller">
+        <button class="room-tab-btn active" data-room="entrance">🚪 玄関・入口</button>
+        <button class="room-tab-btn" data-room="bedroom">🛏️ 寝室・枕</button>
+        <button class="room-tab-btn" data-room="desk">💻 ワークデスク</button>
+        <button class="room-tab-btn" data-room="living">🛋️ リビング</button>
+        <button class="room-tab-btn" data-room="kitchen">🍳 キッチン・水回り</button>
+      </div>
+      <div id="prescriptionList"></div>
+    </div>
+
+    <!-- AI（ChatGPT/Gemini/Claude）風水相談プロンプト生成ボックス -->
+    <div class="prompt-box">
+      <div class="prompt-header">
+        <span class="prompt-title">🤖 AI（ChatGPT / Gemini）に間取りを相談する</span>
+        <button class="copy-btn" id="btnCopyPrompt" onclick="copyFengShuiPrompt()">📋 コピー</button>
+      </div>
+
+      <!-- 悩み・相談事の入力欄（入力するとリアルタイムにプロンプトへ自動反映） -->
+      <div style="margin-bottom: 6px;">
+        <label style="font-size: 0.76rem; color: var(--gold-light); display: block; margin-bottom: 4px; font-weight: 600;">
+          📝 あなたのお部屋の悩み・間取りの状況（入力すると下のAIプロンプトに自動反映されます）:
+        </label>
+        <textarea id="fengShuiDilemmaInput" class="dilemma-textarea" 
+          placeholder="例: この部屋を仕事机にしていますが、集中力が続きません。本命卦とこの方位の気の流れに合わせた家具の配置、おすすめの観葉植物やインテリア改善法を教えてください。"
+          oninput="onFengShuiDilemmaInput()"></textarea>
+      </div>
+
+      <!-- 自動生成されたパーソナライズプロンプトプレビュー -->
+      <div id="fengShuiPromptPreview" class="prompt-preview" onclick="selectFengShuiPromptText()" title="タップで全選択できます"></div>
+
+      <!-- ワンクリックAIジャンプリンク -->
+      <div class="ai-links">
+        <a href="https://chatgpt.com/" target="_blank" rel="noopener" class="ai-link-btn">🚀 ChatGPTを開く</a>
+        <a href="https://gemini.google.com/" target="_blank" rel="noopener" class="ai-link-btn">✨ Geminiを開く</a>
+        <a href="https://claude.ai/" target="_blank" rel="noopener" class="ai-link-btn">🔮 Claudeを開く</a>
+      </div>
+    </div>
+
+    <!-- わが家の風水鑑定カルテ -->
+    <div class="record-card">
+      <div class="section-headline">
+        <span>📋</span> わが家の風水カルテ（鑑定記録メモ）
+      </div>
+      <div class="record-actions-row">
+        <select class="calc-select" id="recordPlaceSelect" style="flex: 2;">
+          <option value="玄関">🚪 玄関ドア</option>
+          <option value="寝室（枕の位置）">🛏️ 寝室（枕の位置）</option>
+          <option value="仕事机（向く方角）">💻 仕事机（向く方角）</option>
+          <option value="リビングソファ">🛋️ リビングソファ</option>
+          <option value="キッチン・コンロ">🍳 キッチン・コンロ</option>
+          <option value="バルコニー・窓">☀️ バルコニー・窓</option>
+        </select>
+        <button class="btn-calc" id="btnSaveRecord" style="flex: 1;">記録する</button>
+        <button class="nudge-btn" id="btnClearRecords" style="flex: 1; color:#e53e3e;">全消去</button>
+      </div>
+      <div class="record-list" id="recordItemsContainer"></div>
+    </div>
+
+    <footer>
+      <p>著書『スマホをかざすだけ！大人の本格風水・羅盤ナビ』公式Webツール</p>
+      <p style="margin-top: 4px; color: var(--text-muted);">著者：巻石 青葉 ｜ 株式会社一人出版社</p>
+    </footer>
+  </div>
+
+  <!-- 初心者向けミニガイドモーダル -->
+  <div class="modal-backdrop" id="guideModal">
+    <div class="modal-box">
+      <button class="modal-close-btn" id="btnCloseGuide">✕</button>
+      <h2 style="font-family: var(--font-serif); color: var(--gold-light); font-size: 1.2rem;">🧭 本格風水羅盤の使い方ナビ</h2>
+      <div class="modal-body">
+        <h3>1. 測定の基本ルール（3大原則）</h3>
+        <ol>
+          <li><strong>部屋・家の中心（太極）に立つ</strong>：リビングや間取りの中心に立ち、胸の高さで構えます。</li>
+          <li><strong>水平を保つ</strong>：右下の「気泡水準器」の気泡が中央に収まり、緑に点灯した状態で測ります。</li>
+          <li><strong>金属や家電から1m離れる</strong>：テレビや冷蔵庫は磁気狂いを起こすため離れます。</li>
+        </ol>
+        <h3>2. 3D間取り気流実験室の使い方</h3>
+        <p>上部の「3D間取り気流実験室」タブをタップすると、部屋の気の流れが立体的に可視化されます。デスクやベッドを回転させたり観葉植物を置くことで、空間スコアがリアルタイムに変動します。</p>
+        <h3>3. 凶方位（絶命・五鬼）が出ても大丈夫！</h3>
+        <p>風水の真髄は「化殺（かさつ）」です。観葉植物、真鍮ベル、盛り塩、清掃によって邪気を無力化し、吉相に変えることができます。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript アプリ本体 -->
+  <script>
+    /* ========================================================
+       1. 伝統風水データマスター
+       ======================================================== */
+    
+    /* ========================================================
+       正針百二十分金（120分金：坐向旺相空亡）
+       二十四山を各5等分（3度刻み、計120格）。
+       丙・庚干（および丁・辛干）を「旺相（大吉）」とし、
+       正中線（戊・己）は「亀甲空亡（大凶）」とする伝統風水極意。
+       ======================================================== */
+    const FENJIN_120_NAMES = [
+      // 子山 (352.5 - 7.5)
+      { m: "子山", gan: "甲子", type: "孤虚", desc: "孤虚線（気力が衰退しやすい線）" },
+      { m: "子山", gan: "丙子", type: "旺相", desc: "旺相大吉（丁財両旺・家運隆盛）" },
+      { m: "子山", gan: "戊子", type: "空亡", desc: "亀甲空亡（正中線・気の激突を避けるべき大凶線）" },
+      { m: "子山", gan: "庚子", type: "旺相", desc: "旺相大吉（金運充実・事業発展）" },
+      { m: "子山", gan: "壬子", type: "孤虚", desc: "孤虚線（財の流出に注意）" },
+
+      // 癸山 (7.5 - 22.5)
+      { m: "癸山", gan: "甲丑", type: "孤虚", desc: "孤虚線" },
+      { m: "癸山", gan: "丙丑", type: "旺相", desc: "旺相吉（蓄財と家庭安定）" },
+      { m: "癸山", gan: "戊丑", type: "空亡", desc: "亀甲空亡（大凶線）" },
+      { m: "癸山", gan: "庚丑", type: "旺相", desc: "旺相吉（不動産運・堅実発展）" },
+      { m: "癸山", gan: "壬丑", type: "孤虚", desc: "孤虚線" },
+
+      // 丑山 (22.5 - 37.5)
+      { m: "丑山", gan: "乙丑", type: "孤虚", desc: "孤虚線" },
+      { m: "丑山", gan: "丁丑", type: "旺相", desc: "旺相大吉（貴人助勢・財運強化）" },
+      { m: "丑山", gan: "己丑", type: "空亡", desc: "亀甲空亡（大凶線）" },
+      { m: "丑山", gan: "辛丑", type: "旺相", desc: "旺相大吉（学術名声・富貴）" },
+      { m: "丑山", gan: "癸丑", type: "孤虚", desc: "孤虚線" },
+
+      // 艮山 (37.5 - 52.5)
+      { m: "艮山", gan: "乙寅", type: "孤虚", desc: "孤虚線" },
+      { m: "艮山", gan: "丁寅", type: "旺相", desc: "旺相吉（長寿健康・福徳）" },
+      { m: "艮山", gan: "己寅", type: "空亡", desc: "亀甲空亡（大凶線）" },
+      { m: "艮山", gan: "辛寅", type: "旺相", desc: "旺相吉（立身出世・発展）" },
+      { m: "艮山", gan: "癸寅", type: "孤虚", desc: "孤虚線" },
+
+      // 寅山 (52.5 - 67.5)
+      { m: "寅山", gan: "丙寅", type: "旺相", desc: "旺相大吉（生気充満・新展開）" },
+      { m: "寅山", gan: "戊寅", type: "空亡", desc: "亀甲空亡" },
+      { m: "寅山", gan: "庚寅", type: "旺相", desc: "旺相大吉（事業躍進・財運）" },
+      { m: "寅山", gan: "壬寅", type: "孤虚", desc: "孤虚線" },
+      { m: "寅山", gan: "甲寅", type: "孤虚", desc: "孤虚線" },
+
+      // 甲山 (67.5 - 82.5)
+      { m: "甲山", gan: "丙卯", type: "旺相", desc: "旺相吉（東方生気・活発運）" },
+      { m: "甲山", gan: "戊卯", type: "空亡", desc: "亀甲空亡" },
+      { m: "甲山", gan: "庚卯", type: "旺相", desc: "旺相吉（名誉向上・飛躍）" },
+      { m: "甲山", gan: "壬卯", type: "孤虚", desc: "孤虚線" },
+      { m: "甲山", gan: "甲卯", type: "孤虚", desc: "孤虚線" },
+
+      // 卯山 (82.5 - 97.5)
+      { m: "卯山", gan: "乙卯", type: "孤虚", desc: "孤虚線" },
+      { m: "卯山", gan: "丁卯", type: "旺相", desc: "旺相大吉（商売繁盛・人脈拡大）" },
+      { m: "卯山", gan: "己卯", type: "空亡", desc: "亀甲空亡（大凶線）" },
+      { m: "卯山", gan: "辛卯", type: "旺相", desc: "旺相大吉（文才開花・富裕）" },
+      { m: "卯山", gan: "癸卯", type: "孤虚", desc: "孤虚線" },
+
+      // 乙山 (97.5 - 112.5)
+      { m: "乙山", gan: "乙辰", type: "孤虚", desc: "孤虚線" },
+      { m: "乙山", gan: "丁辰", type: "旺相", desc: "旺相吉（穏やかな財運・家庭円満）" },
+      { m: "乙山", gan: "己辰", type: "空亡", desc: "亀甲空亡" },
+      { m: "乙山", gan: "辛辰", type: "旺相", desc: "旺相吉（技術向上・蓄財）" },
+      { m: "乙山", gan: "癸辰", type: "孤虚", desc: "孤虚線" },
+
+      // 辰山 (112.5 - 127.5)
+      { m: "辰山", gan: "丙辰", type: "旺相", desc: "旺相大吉（龍脈生気・富貴隆昌）" },
+      { m: "辰山", gan: "戊辰", type: "空亡", desc: "亀甲空亡" },
+      { m: "辰山", gan: "庚辰", type: "旺相", desc: "旺相大吉（権威・名利双全）" },
+      { m: "辰山", gan: "壬辰", type: "孤虚", desc: "孤虚線" },
+      { m: "辰山", gan: "甲辰", type: "孤虚", desc: "孤虚線" },
+
+      // 巽山 (127.5 - 142.5)
+      { m: "巽山", gan: "丙巳", type: "旺相", desc: "旺相吉（良縁引寄・信用絶大）" },
+      { m: "巽山", gan: "戊巳", type: "空亡", desc: "亀甲空亡" },
+      { m: "巽山", gan: "庚巳", type: "旺相", desc: "旺相吉（風水最良・交易発展）" },
+      { m: "巽山", gan: "壬巳", type: "孤虚", desc: "孤虚線" },
+      { m: "巽山", gan: "甲巳", type: "孤虚", desc: "孤虚線" },
+
+      // 巳山 (142.5 - 157.5)
+      { m: "巳山", gan: "乙巳", type: "孤虚", desc: "孤虚線" },
+      { m: "巳山", gan: "丁巳", type: "旺相", desc: "旺相大吉（火土相生・大富貴）" },
+      { m: "巳山", gan: "己巳", type: "空亡", desc: "亀甲空亡" },
+      { m: "巳山", gan: "辛巳", type: "旺相", desc: "旺相大吉（金運強大・知略発展）" },
+      { m: "巳山", gan: "癸巳", type: "孤虚", desc: "孤虚線" },
+
+      // 丙山 (157.5 - 172.5)
+      { m: "丙山", gan: "乙午", type: "孤虚", desc: "孤虚線" },
+      { m: "丙山", gan: "丁午", type: "旺相", desc: "旺相吉（名声赫々・事業成功）" },
+      { m: "丙山", gan: "己午", type: "空亡", desc: "亀甲空亡" },
+      { m: "丙山", gan: "辛午", type: "旺相", desc: "旺相吉（富裕栄華・好機到来）" },
+      { m: "丙山", gan: "癸午", type: "孤虚", desc: "孤虚線" },
+
+      // 午山 (172.5 - 187.5)
+      { m: "午山", gan: "甲午", type: "孤虚", desc: "孤虚線" },
+      { m: "午山", gan: "丙午", type: "旺相", desc: "旺相大吉（正南太陽・丁財両旺・最大吉）" },
+      { m: "午山", gan: "戊午", type: "空亡", desc: "亀甲空亡（正中線・気の激突を避けるべき大凶線）" },
+      { m: "午山", gan: "庚午", type: "旺相", desc: "旺相大吉（官禄名声・財源広開・最大吉）" },
+      { m: "午山", gan: "壬午", type: "孤虚", desc: "孤虚線" },
+
+      // 丁山 (187.5 - 202.5)
+      { m: "丁山", gan: "甲未", type: "孤虚", desc: "孤虚線" },
+      { m: "丁山", gan: "丙未", type: "旺相", desc: "旺相吉（温和福徳・人徳向上）" },
+      { m: "丁山", gan: "戊未", type: "空亡", desc: "亀甲空亡" },
+      { m: "丁山", gan: "庚未", type: "旺相", desc: "旺相吉（蓄財繁栄・子孫繁栄）" },
+      { m: "丁山", gan: "壬未", type: "孤虚", desc: "孤虚線" },
+
+      // 未山 (202.5 - 217.5)
+      { m: "未山", gan: "乙未", type: "孤虚", desc: "孤虚線" },
+      { m: "未山", gan: "丁未", type: "旺相", desc: "旺相大吉（慈愛家庭・安定富貴）" },
+      { m: "未山", gan: "己未", type: "空亡", desc: "亀甲空亡" },
+      { m: "未山", gan: "辛未", type: "旺相", desc: "旺相大吉（土地建物運・蓄財）" },
+      { m: "未山", gan: "癸未", type: "孤虚", desc: "孤虚線" },
+
+      // 坤山 (217.5 - 232.5)
+      { m: "坤山", gan: "乙申", type: "孤虚", desc: "孤虚線" },
+      { m: "坤山", gan: "丁申", type: "旺相", desc: "旺相吉（厚徳載物・母性安泰）" },
+      { m: "坤山", gan: "己申", type: "空亡", desc: "亀甲空亡" },
+      { m: "坤山", gan: "辛申", type: "旺相", desc: "旺相吉（不動産大吉・大富裕）" },
+      { m: "坤山", gan: "癸申", type: "孤虚", desc: "孤虚線" },
+
+      // 申山 (232.5 - 247.5)
+      { m: "申山", gan: "丙申", type: "旺相", desc: "旺相大吉（金水相生・知恵と財）" },
+      { m: "申山", gan: "戊申", type: "空亡", desc: "亀甲空亡" },
+      { m: "申山", gan: "庚申", type: "旺相", desc: "旺相大吉（剛毅決断・事業拡大）" },
+      { m: "申山", gan: "壬申", type: "孤虚", desc: "孤虚線" },
+      { m: "申山", gan: "甲申", type: "孤虚", desc: "孤虚線" },
+
+      // 庚山 (247.5 - 262.5)
+      { m: "庚山", gan: "丙酉", type: "旺相", desc: "旺相吉（西方金運・収穫富裕）" },
+      { m: "庚山", gan: "戊酉", type: "空亡", desc: "亀甲空亡" },
+      { m: "庚山", gan: "庚酉", type: "旺相", desc: "旺相吉（資産保全・利益増大）" },
+      { m: "庚山", gan: "壬酉", type: "孤虚", desc: "孤虚線" },
+      { m: "庚山", gan: "甲酉", type: "孤虚", desc: "孤虚線" },
+
+      // 酉山 (262.5 - 277.5)
+      { m: "酉山", gan: "乙酉", type: "孤虚", desc: "孤虚線" },
+      { m: "酉山", gan: "丁酉", type: "旺相", desc: "旺相大吉（正西財帛・金銀満堂）" },
+      { m: "酉山", gan: "己酉", type: "空亡", desc: "亀甲空亡（大凶線）" },
+      { m: "酉山", gan: "辛酉", type: "旺相", desc: "旺相大吉（悦びと富貴・大吉）" },
+      { m: "酉山", gan: "癸酉", type: "孤虚", desc: "孤虚線" },
+
+      // 辛山 (277.5 - 292.5)
+      { m: "辛山", gan: "乙戌", type: "孤虚", desc: "孤虚線" },
+      { m: "辛山", gan: "丁戌", type: "旺相", desc: "旺相吉（宝飾財宝・名誉）" },
+      { m: "辛山", gan: "己戌", type: "空亡", desc: "亀甲空亡" },
+      { m: "辛山", gan: "辛戌", type: "旺相", desc: "旺相吉（蓄積財産・堅固）" },
+      { m: "辛山", gan: "癸戌", type: "孤虚", desc: "孤虚線" },
+
+      // 戌山 (292.5 - 307.5)
+      { m: "戌山", gan: "丙戌", type: "旺相", desc: "旺相大吉（天門護衛・権力財運）" },
+      { m: "戌山", gan: "戊戌", type: "空亡", desc: "亀甲空亡" },
+      { m: "戌山", gan: "庚戌", type: "旺相", desc: "旺相大吉（指導力・社会的地位）" },
+      { m: "戌山", gan: "壬戌", type: "孤虚", desc: "孤虚線" },
+      { m: "戌山", gan: "甲戌", type: "孤虚", desc: "孤虚線" },
+
+      // 乾山 (307.5 - 322.5)
+      { m: "乾山", gan: "丙亥", type: "旺相", desc: "旺相吉（天王峰立・大統領運）" },
+      { m: "乾山", gan: "戊亥", type: "空亡", desc: "亀甲空亡" },
+      { m: "乾山", gan: "庚亥", type: "旺相", desc: "旺相吉（最高権威・福寿双全）" },
+      { m: "乾山", gan: "壬亥", type: "孤虚", desc: "孤虚線" },
+      { m: "乾山", gan: "甲亥", type: "孤虚", desc: "孤虚線" },
+
+      // 亥山 (322.5 - 337.5)
+      { m: "亥山", gan: "乙亥", type: "孤虚", desc: "孤虚線" },
+      { m: "亥山", gan: "丁亥", type: "旺相", desc: "旺相大吉（西北富貴・文昌貴人）" },
+      { m: "亥山", gan: "己亥", type: "空亡", desc: "亀甲空亡" },
+      { m: "亥山", gan: "辛亥", type: "旺相", desc: "旺相大吉（水金相生・純潔富裕）" },
+      { m: "亥山", gan: "癸亥", type: "孤虚", desc: "孤虚線" },
+
+      // 壬山 (337.5 - 352.5)
+      { m: "壬山", gan: "乙子", type: "孤虚", desc: "孤虚線" },
+      { m: "壬山", gan: "丁子", type: "旺相", desc: "旺相吉（財源滾滾・智慧深遠）" },
+      { m: "壬山", gan: "己子", type: "空亡", desc: "亀甲空亡" },
+      { m: "壬山", gan: "辛子", type: "旺相", desc: "旺相吉（事業安定・隆盛）" },
+      { m: "壬山", gan: "癸子", type: "孤虚", desc: "孤虚線" }
+    ];
+
+    /* 八煞黄泉（黄泉八煞：風水禁忌煞方位） */
+    const HUANGQUAN_RULES = [
+      { kua: "坎", mount: "子・癸・壬", shaMount: "辰山", shaDir: "東南東", poem: "坎龍坤兔震山猴" },
+      { kua: "坤", mount: "未・坤・申", shaMount: "卯山", shaDir: "正東", poem: "坎龍坤兔震山猴" },
+      { kua: "震", mount: "甲・卯・乙", shaMount: "申山", shaDir: "西南西", poem: "坎龍坤兔震山猴" },
+      { kua: "巽", mount: "辰・巽・巳", shaMount: "酉山", shaDir: "正西", poem: "巽雞乾馬兌蛇頭" },
+      { kua: "乾", mount: "戌・乾・亥", shaMount: "午山", shaDir: "正南", poem: "巽雞乾馬兌蛇頭" },
+      { kua: "兌", mount: "庚・酉・辛", shaMount: "巳山", shaDir: "南南東", poem: "巽雞乾馬兌蛇頭" },
+      { kua: "艮", mount: "丑・艮・寅", shaMount: "寅山", shaDir: "東北東", poem: "艮虎離豬為煞曜" },
+      { kua: "離", mount: "丙・午・丁", shaMount: "亥山", shaDir: "北北西", poem: "艮虎離豬為煞曜" }
+    ];
+
+    const MOUNTAINS = [
+      { name: "子山", pinyin: "Zi", deg: 0, dir: "北 (正北)", wuxing: "水", yinyang: "陽水", trigram: "坎", nature: "四正・地支" },
+      { name: "癸山", pinyin: "Gui", deg: 15, dir: "北 (北北東)", wuxing: "水", yinyang: "陰水", trigram: "坎", nature: "天干" },
+      { name: "丑山", pinyin: "Chou", deg: 30, dir: "北東 (北北東)", wuxing: "土", yinyang: "陰土", trigram: "艮", nature: "地支" },
+      { name: "艮山", pinyin: "Gen", deg: 45, dir: "北東 (正北東)", wuxing: "土", yinyang: "陽土", trigram: "艮", nature: "四維・八卦" },
+      { name: "寅山", pinyin: "Yin", deg: 60, dir: "北東 (東北東)", wuxing: "木", yinyang: "陽木", trigram: "艮", nature: "地支" },
+      { name: "甲山", pinyin: "Jia", deg: 75, dir: "東 (東北東)", wuxing: "木", yinyang: "陽木", trigram: "震", nature: "天干" },
+      { name: "卯山", pinyin: "Mao", deg: 90, dir: "東 (正東)", wuxing: "木", yinyang: "陰木", trigram: "震", nature: "四正・地支" },
+      { name: "乙山", pinyin: "Yi", deg: 105, dir: "東 (東南東)", wuxing: "木", yinyang: "陰木", trigram: "震", nature: "天干" },
+      { name: "辰山", pinyin: "Chen", deg: 120, dir: "南東 (東南東)", wuxing: "土", yinyang: "陽土", trigram: "巽", nature: "地支" },
+      { name: "巽山", pinyin: "Xun", deg: 135, dir: "南東 (正南東)", wuxing: "木", yinyang: "陰木", trigram: "巽", nature: "四維・八卦" },
+      { name: "巳山", pinyin: "Si", deg: 150, dir: "南東 (南南東)", wuxing: "火", yinyang: "陰火", trigram: "巽", nature: "地支" },
+      { name: "丙山", pinyin: "Bing", deg: 165, dir: "南 (南南東)", wuxing: "火", yinyang: "陽火", trigram: "離", nature: "天干" },
+      { name: "午山", pinyin: "Wu", deg: 180, dir: "南 (正南)", wuxing: "火", yinyang: "陽火", trigram: "離", nature: "四正・地支" },
+      { name: "丁山", pinyin: "Ding", deg: 195, dir: "南 (南南西)", wuxing: "火", yinyang: "陰火", trigram: "離", nature: "天干" },
+      { name: "未山", pinyin: "Wei", deg: 210, dir: "南西 (南南西)", wuxing: "土", yinyang: "陰土", trigram: "坤", nature: "地支" },
+      { name: "坤山", pinyin: "Kun", deg: 225, dir: "南西 (正南西)", wuxing: "土", yinyang: "陰土", trigram: "坤", nature: "四維・八卦" },
+      { name: "申山", pinyin: "Shen", deg: 240, dir: "南西 (西南西)", wuxing: "金", yinyang: "陽金", trigram: "坤", nature: "地支" },
+      { name: "庚山", pinyin: "Geng", deg: 255, dir: "西 (西南西)", wuxing: "金", yinyang: "陽金", trigram: "兌", nature: "天干" },
+      { name: "酉山", pinyin: "You", deg: 270, dir: "西 (正西)", wuxing: "金", yinyang: "陰金", trigram: "兌", nature: "四正・地支" },
+      { name: "辛山", pinyin: "Xin", deg: 285, dir: "西 (西北西)", wuxing: "金", yinyang: "陰金", trigram: "兌", nature: "天干" },
+      { name: "戌山", pinyin: "Xu", deg: 300, dir: "北西 (西北西)", wuxing: "土", yinyang: "陽土", trigram: "乾", nature: "地支" },
+      { name: "乾山", pinyin: "Qian", deg: 315, dir: "北西 (正北西)", wuxing: "金", yinyang: "陽金", trigram: "乾", nature: "四維・八卦" },
+      { name: "亥山", pinyin: "Hai", deg: 330, dir: "北西 (北北西)", wuxing: "水", yinyang: "陰水", trigram: "乾", nature: "地支" },
+      { name: "壬山", pinyin: "Ren", deg: 345, dir: "北 (北北西)", wuxing: "水", yinyang: "陽水", trigram: "坎", nature: "天干" }
+    ];
+
+    const EIGHT_BAGUA = [
+      { key: "坎", name: "坎 (Kan)", dir: "北", symbol: "☵", deg: 0, group: "東四命", elem: "水" },
+      { key: "艮", name: "艮 (Gen)", dir: "北東", symbol: "☶", deg: 45, group: "西四命", elem: "土" },
+      { key: "震", name: "震 (Zhen)", dir: "東", symbol: "☳", deg: 90, group: "東四命", elem: "木" },
+      { key: "巽", name: "巽 (Xun)", dir: "南東", symbol: "☴", deg: 135, group: "東四命", elem: "木" },
+      { key: "離", name: "離 (Li)", dir: "南", symbol: "☲", deg: 180, group: "東四命", elem: "火" },
+      { key: "坤", name: "坤 (Kun)", dir: "南西", symbol: "☷", deg: 225, group: "西四命", elem: "土" },
+      { key: "兌", name: "兌 (Dui)", dir: "西", symbol: "☱", deg: 270, group: "西四命", elem: "金" },
+      { key: "乾", name: "乾 (Qian)", dir: "北西", symbol: "☰", deg: 315, group: "西四命", elem: "金" }
+    ];
+
+    const CONSTELLATIONS = [
+      { name: "虚", deg: 0 }, { name: "危", deg: 13 }, { name: "室", deg: 26 }, { name: "壁", deg: 39 },
+      { name: "奎", deg: 51 }, { name: "婁", deg: 64 }, { name: "胃", deg: 77 }, { name: "昴", deg: 90 },
+      { name: "畢", deg: 103 }, { name: "觜", deg: 116 }, { name: "参", deg: 129 }, { name: "井", deg: 141 },
+      { name: "鬼", deg: 154 }, { name: "柳", deg: 167 }, { name: "星", deg: 180 }, { name: "張", deg: 193 },
+      { name: "翼", deg: 206 }, { name: "軫", deg: 219 }, { name: "角", deg: 231 }, { name: "亢", deg: 244 },
+      { name: "氐", deg: 257 }, { name: "房", deg: 270 }, { name: "心", deg: 283 }, { name: "尾", deg: 296 },
+      { name: "箕", deg: 309 }, { name: "斗", deg: 321 }, { name: "牛", deg: 334 }, { name: "女", deg: 347 }
+    ];
+
+    const SOLAR_TERMS = [
+      "冬至", "小寒", "大寒", "立春", "雨水", "啓蟄", "春分", "清明", "穀雨", "立夏", "小満", "芒種",
+      "夏至", "小暑", "大暑", "立秋", "処暑", "白露", "秋分", "寒露", "霜降", "立冬", "小雪", "大雪"
+    ];
+
+    const NINE_STARS = [
+      { name: "一白水星", short: "一白", deg: 0 },
+      { name: "八白土星", short: "八白", deg: 45 },
+      { name: "三碧木星", short: "三碧", deg: 90 },
+      { name: "四緑木星", short: "四緑", deg: 135 },
+      { name: "九紫火星", short: "九紫", deg: 180 },
+      { name: "二黒土星", short: "二黒", deg: 225 },
+      { name: "七赤金星", short: "七赤", deg: 270 },
+      { name: "六白金星", short: "六白", deg: 315 }
+    ];
+
+    const KUA_TABLE = {
+      qian: {
+        乾: { name: "伏位", type: "小吉", level: "good", desc: "心身の安定・精神鍛錬・自己基盤の確立", score: 10 },
+        坎: { name: "六殺", type: "中凶", level: "bad", desc: "対人摩擦・情のトラブル・判断力鈍化", score: -10 },
+        艮: { name: "天医", type: "大吉", level: "great", desc: "健康増進・病気平癒・メンタル完全回復", score: 18 },
+        震: { name: "五鬼", type: "大凶", level: "bad", desc: "突発的な出費・火難や家電故障・イライラ", score: -16 },
+        巽: { name: "禍害", type: "小凶", level: "bad", desc: "些細なミス・計画の遅延・口論", score: -8 },
+        離: { name: "絶命", type: "最大凶", level: "bad", desc: "最悪のエネルギー。長時間の滞在は避け要化殺", score: -25 },
+        坤: { name: "延年", type: "中吉", level: "good", desc: "円満な人間関係・夫婦調和・強力な人脈運", score: 14 },
+        兌: { name: "生気", type: "最大吉", level: "great", desc: "最強の事業発展運・大きな金運・躍進のチャンス", score: 25 }
+      },
+      kun: {
+        坤: { name: "伏位", type: "小吉", level: "good", desc: "母性の安らぎ・地に足ついた安定生活", score: 10 },
+        艮: { name: "生気", type: "最大吉", level: "great", desc: "不動産運・蓄財・学問と知恵の大吉方位", score: 25 },
+        兌: { name: "天医", type: "大吉", level: "great", desc: "深い癒やし・健康維持・ストレス解放", score: 18 },
+        乾: { name: "延年", type: "中吉", level: "good", desc: "社会的信用・リーダーシップと権威の向上", score: 14 },
+        坎: { name: "絶命", type: "最大凶", level: "bad", desc: "強い冷えと活力低下。盛り塩と植物で化殺", score: -25 },
+        離: { name: "六殺", type: "中凶", level: "bad", desc: "感情の波乱・家庭内の口論に注意", score: -10 },
+        震: { name: "禍害", type: "小凶", level: "bad", desc: "焦りによる出費・予定の乱れ", score: -8 },
+        巽: { name: "五鬼", type: "大凶", level: "bad", desc: "不信感・人間関係のトラブル", score: -16 }
+      },
+      kan: {
+        坎: { name: "伏位", type: "小吉", level: "good", desc: "深い思索・知性の探求・リフレッシュ", score: 10 },
+        巽: { name: "生気", type: "最大吉", level: "great", desc: "商売繁盛・良縁の引き寄せ・急速な飛躍", score: 25 },
+        震: { name: "天医", type: "大吉", level: "great", desc: "若々しいバイタリティ・行動力と健康の回復", score: 18 },
+        離: { name: "延年", type: "中吉", level: "good", desc: "名誉・魅力向上・長期的な良好関係", score: 14 },
+        坤: { name: "絶命", type: "最大凶", level: "bad", desc: "強い停滞感。清潔を徹底し水晶を配置", score: -25 },
+        艮: { name: "五鬼", type: "大凶", level: "bad", desc: "方針の迷い・精神的プレッシャー", score: -16 },
+        乾: { name: "六殺", type: "中凶", level: "bad", desc: "孤立感・上司や目上との摩擦", score: -10 },
+        兌: { name: "禍害", type: "小凶", level: "bad", desc: "言葉のトラブル（舌禍）に注意", score: -8 }
+      },
+      li: {
+        離: { name: "伏位", type: "小吉", level: "good", desc: "直感と感性の研ぎ澄まし・美的センス向上", score: 10 },
+        震: { name: "生気", type: "最大吉", level: "great", desc: "劇的な成長・先駆的チャンスの獲得", score: 25 },
+        巽: { name: "天医", type: "大吉", level: "great", desc: "心身の活力・良好なパートナーシップ", score: 18 },
+        坎: { name: "延年", type: "中吉", level: "good", desc: "精神の深い安定・持続的な信頼", score: 14 },
+        乾: { name: "絶命", type: "最大凶", level: "bad", desc: "気運の激しい衝突。静寂と遮光を重視", score: -25 },
+        兌: { name: "五鬼", type: "大凶", level: "bad", desc: "急な予定変更・無駄な散財に注意", score: -16 },
+        艮: { name: "禍害", type: "小凶", level: "bad", desc: "頑固さによる孤立・誤解", score: -8 },
+        坤: { name: "六殺", type: "中凶", level: "bad", desc: "倦怠感・優柔不断な迷い", score: -10 }
+      },
+      zhen: {
+        震: { name: "伏位", type: "小吉", level: "good", desc: "スタートダッシュの力・積極性と勇気", score: 10 },
+        離: { name: "生気", type: "最大吉", level: "great", desc: "名声の獲得・才能開花・注目を集める運気", score: 25 },
+        坎: { name: "天医", type: "大吉", level: "great", desc: "柔軟な思考力・ストレス知らずの健康体", score: 18 },
+        巽: { name: "延年", type: "中吉", level: "good", desc: "周囲との調和・ビジネス上の信用向上", score: 14 },
+        兌: { name: "絶命", type: "最大凶", level: "bad", desc: "衝突やケガに注意。観葉植物で気を和らげる", score: -25 },
+        乾: { name: "五鬼", type: "大凶", level: "bad", desc: "目上との対立・突発的な難題", score: -16 },
+        坤: { name: "禍害", type: "小凶", level: "bad", desc: "モチベーションの低下・足踏み状態", score: -8 },
+        艮: { name: "六殺", type: "中凶", level: "bad", desc: "行き詰まり感・停滞", score: -10 }
+      },
+      xun: {
+        巽: { name: "伏位", type: "小吉", level: "good", desc: "情報受発信・柔軟な適応力・円満なコミュニケーション", score: 10 },
+        坎: { name: "生気", type: "最大吉", level: "great", desc: "大きな財運の流入・知恵と富の獲得", score: 25 },
+        離: { name: "天医", type: "大吉", level: "great", desc: "晴れやかな気分・バイタリティと若返り", score: 18 },
+        震: { name: "延年", type: "中吉", level: "good", desc: "人との円滑な協力・長期的な信用の育成", score: 14 },
+        艮: { name: "絶命", type: "最大凶", level: "bad", desc: "財の流出に注意。金属や観葉植物で化殺", score: -25 },
+        坤: { name: "五鬼", type: "大凶", level: "bad", desc: "他人に騙されやすさ・心の迷い", score: -16 },
+        兌: { name: "六殺", type: "中凶", level: "bad", desc: "生活リズムの乱れ・浪費癖", score: -10 },
+        乾: { name: "禍害", type: "小凶", level: "bad", desc: "自信喪失・優柔不断な選択", score: -8 }
+      },
+      gen: {
+        艮: { name: "伏位", type: "小吉", level: "good", desc: "どっしりした安心感・不動の土台・貯蓄力", score: 10 },
+        坤: { name: "生気", type: "最大吉", level: "great", desc: "大きな器で財を蓄える・一族の繁栄", score: 25 },
+        乾: { name: "天医", type: "大吉", level: "great", desc: "強靭なメンタル・病気知らずの健康運", score: 18 },
+        兌: { name: "延年", type: "中吉", level: "good", desc: "楽しい人間関係・信頼できる仲間づくり", score: 14 },
+        巽: { name: "絶命", type: "最大凶", level: "bad", desc: "激しい消耗感。照明を明るくし化殺", score: -25 },
+        離: { name: "禍害", type: "小凶", level: "bad", desc: "見栄やプライドによる無駄遣い", score: -8 },
+        坎: { name: "五鬼", type: "大凶", level: "bad", desc: "冷え・孤独感・ストレスの蓄積", score: -16 },
+        震: { name: "六殺", type: "中凶", level: "bad", desc: "短気や焦りによるミス", score: -10 }
+      },
+      dui: {
+        兌: { name: "伏位", type: "小吉", level: "good", desc: "愛嬌・楽しい会話・商売上の引き寄せ", score: 10 },
+        乾: { name: "生気", type: "最大吉", level: "great", desc: "トップに立つ統率力・高いステータス獲得", score: 25 },
+        坤: { name: "天医", type: "大吉", level: "great", desc: "心身の滋養・家庭円満・深い安心感", score: 18 },
+        艮: { name: "延年", type: "中吉", level: "good", desc: "着実な貯蓄・誠実な協力者との縁", score: 14 },
+        震: { name: "絶命", type: "最大凶", level: "bad", desc: "金銭トラブル・口論の激化。赤いものを避ける", score: -25 },
+        巽: { name: "六殺", type: "中凶", level: "bad", desc: "甘い誘惑・規律の緩みに注意", score: -10 },
+        離: { name: "五鬼", type: "大凶", level: "bad", desc: "感情の爆発・急な出費", score: -16 },
+        坎: { name: "禍害", type: "小凶", level: "bad", desc: "不用意な一言による誤解", score: -8 }
+      }
+    };
+
+    const ROOM_PRESCRIPTIONS = {
+      entrance: {
+        good: [
+          { icon: "✨", title: "明るく清浄な気を取り込む", text: "玄関照明を明るく保ち、たたきに靴を脱ぎ散らかさず下駄箱へ。良い気が家全体へとスムーズに巡ります。" },
+          { icon: "🪴", title: "上向きに伸びる観葉植物（パキラ・青年の木）", text: "背が高く元気な植物を置くと、外からの良気をさらに増幅して家内へ招き入れます。" }
+        ],
+        bad: [
+          { icon: "🪞", title: "正面の鏡は即座に位置変更を", text: "ドアを開けて正面にある鏡は幸運をそのまま跳ね返してしまいます。左右の壁に移してください。" },
+          { icon: "🧂", title: "たたきの水拭き＆盛り塩で完全化殺", text: "凶方位の玄関でも、毎朝サッと天然塩水でたたきを拭き、白い小皿に盛り塩を置くことで邪気を無力化できます。" }
+        ]
+      },
+      bedroom: {
+        good: [
+          { icon: "🛏️", title: "吉方位に頭を向けて就寝する", text: "あなたの吉方位（特に延年＝人間関係、天医＝健康回復）に頭を向けて寝ることで、睡眠中に良質な気エネルギーを完全充電できます。" },
+          { icon: "🌙", title: "アースカラーの寝具＆間接照明", text: "ベージュ、オフホワイト、生成りなど落ち着いた色調で、副交感神経を優位にする空間を作ります。" }
+        ],
+        bad: [
+          { icon: "⚠️", title: "ドアの直線上にベッドを置かない", text: "ドアからの「気の直撃」を受けやすくなります。ベッドを少しずらすか、のれんや布スクリーンで目隠しを。" },
+          { icon: "🪞", title: "寝姿が映る鏡には布をかける", text: "寝ている間に気エネルギーが鏡に吸い取られる原因となります。就寝時は布を1枚かけておけば安心です。" }
+        ]
+      },
+      desk: {
+        good: [
+          { icon: "💼", title: "吉方位（生気・伏位）を向いて座る", text: "デスクワーク時にあなたの「生気（発展・売上）」または「伏位（集中・研究）」の方向を向くように椅子を配置すると、知恵と成果が跳ね上がります。" },
+          { icon: "🧱", title: "背後にしっかりした壁を配する（背山）", text: "背中が壁になっていると心理的安心感と強力な後ろ盾運（バックアップ）が得られます。" }
+        ],
+        bad: [
+          { icon: "🚪", title: "背中に入り口ドアが来る配置は避ける", text: "無意識に背後を警戒して集中力が途切れます。どうしても動かせない場合は椅子を高めの背もたれに。" },
+          { icon: "🔌", title: "配線コードのごちゃつきを整理する", text: "電線の絡まりは思考の乱れ（電磁気の乱れ）を招きます。ケーブルボックス等で見えないよう整えましょう。" }
+        ]
+      },
+      living: {
+        good: [
+          { icon: "🛋️", title: "ソファは部屋全体を見渡せる位置に", text: "部屋の奥（吉方位側）にソファを配し、入り口が見通せるレイアウトが家庭内の調和と円満を生みます。" },
+          { icon: "☀️", title: "毎朝10分の換気で気を通す", text: "朝起きたら窓を2箇所以上開けて風の通り道を作り、夜間に滞留した陰の気を一掃します。" }
+        ],
+        bad: [
+          { icon: "⚠️", title: "天井の梁（はり）の下に座らない", text: "梁の下は「気の下押し圧力」が強くかかります。座る位置をずらすか、梁の下に観葉植物を置いて緩和します。" },
+          { icon: "📦", title: "不要な段ボールや雑誌の山を片付ける", text: "紙類は湿気と古い気を吸い込み運気を停滞させます。速やかに処分して余白を作りましょう。" }
+        ]
+      },
+      kitchen: {
+        good: [
+          { icon: "🍳", title: "火と水のバランスを保つ", text: "コンロ（火）とシンク（水）の間に小さな観葉植物（木）を置くと、「木生火」「水生木」となり相剋を和らげます。" },
+          { icon: "✨", title: "換気扇と排水口のピカピカ清掃", text: "キッチンの清潔さはそのまま金運と健康運に直結します。油汚れを溜めないことが最大の風水です。" }
+        ],
+        bad: [
+          { icon: "🔪", title: "包丁を出しっぱなしにしない", text: "刃物が視界に入ると「殺気」が生じ、イライラや突発的な出費の原因になります。必ず扉内のホルダーへ収納を。" },
+          { icon: "🗑️", title: "ゴミ箱はフタ付きにする", text: "生ゴミの臭気や邪気が部屋へ漏れ出さないよう、フタ付きのゴミ箱を選びましょう。" }
+        ]
+      }
+    };
+
+    /* ========================================================
+       2. Web Audio API 音声効果
+       ======================================================== */
+    let audioCtx = null;
+    let isSoundEnabled = true;
+
+    function initAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    let lastClickDeg = 0;
+    function playDialTick() {
+      if (!isSoundEnabled || !audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.025);
+        gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.025);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.03);
+      } catch (e) {}
+    }
+
+    let hasPlayedLevelOk = false;
+    function playLevelChime() {
+      if (!isSoundEnabled || !audioCtx) return;
+      try {
+        const now = audioCtx.currentTime;
+        const osc1 = audioCtx.createOscillator();
+        const osc2 = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc1.type = "sine";
+        osc2.type = "triangle";
+        osc1.frequency.setValueAtTime(587.33, now);
+        osc2.frequency.setValueAtTime(880.00, now);
+        gain.gain.setValueAtTime(0.06, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc1.start(now);
+        osc2.start(now);
+        osc1.stop(now + 0.36);
+        osc2.stop(now + 0.36);
+      } catch (e) {}
+    }
+
+    /* ========================================================
+       3. 2D 羅盤 SVG 多層リング描画
+       ======================================================== */
+    function buildDetailedLuopanSVG() {
+      const cx = 300, cy = 300;
+
+      // 1. 周天360度環 (r=284〜295, 文字 r=273)
+      const degreeRing = document.getElementById("svgDegreeRing");
+      if (degreeRing) {
+        degreeRing.innerHTML = "";
+        for (let d = 0; d < 360; d++) {
+          const rad = (d - 90) * Math.PI / 180;
+          let r1 = 293, r2 = (d % 10 === 0) ? 281 : (d % 5 === 0 ? 284 : 288);
+          let color = (d % 10 === 0) ? "#f7e7a9" : (d % 5 === 0 ? "#c5a44a" : "#7d6322");
+          const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+          line.setAttribute("x1", cx + r1 * Math.cos(rad)); line.setAttribute("y1", cy + r1 * Math.sin(rad));
+          line.setAttribute("x2", cx + r2 * Math.cos(rad)); line.setAttribute("y2", cy + r2 * Math.sin(rad));
+          line.setAttribute("stroke", color);
+          line.setAttribute("stroke-width", (d % 10 === 0) ? "1.1" : "0.5");
+          degreeRing.appendChild(line);
+
+          if (d % 10 === 0) {
+            const tx = cx + 273 * Math.cos(rad);
+            const ty = cy + 273 * Math.sin(rad);
+            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            text.setAttribute("x", tx); text.setAttribute("y", ty);
+            text.setAttribute("text-anchor", "middle"); text.setAttribute("dominant-baseline", "central");
+            text.setAttribute("fill", "#e5c875"); text.setAttribute("font-size", "6.5");
+            text.setAttribute("font-family", "'Cinzel', serif");
+            text.setAttribute("transform", `rotate(${d + 90}, ${tx}, ${ty})`);
+            text.textContent = d;
+            degreeRing.appendChild(text);
+          }
+        }
+      }
+
+      // 2. 二十八宿環 (r=260〜270)
+      const constRing = document.getElementById("svgConstellationRing");
+      if (constRing) {
+        constRing.innerHTML = "";
+        CONSTELLATIONS.forEach((c, idx) => {
+          const nextDeg = (idx === CONSTELLATIONS.length - 1) ? 360 : CONSTELLATIONS[idx + 1].deg;
+          const midDeg = (c.deg + nextDeg) / 2;
+          const rad = (midDeg - 90) * Math.PI / 180;
+          const tx = cx + 265 * Math.cos(rad);
+          const ty = cy + 265 * Math.sin(rad);
+
+          const borderRad = (c.deg - 90) * Math.PI / 180;
+          const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+          line.setAttribute("x1", cx + 270 * Math.cos(borderRad)); line.setAttribute("y1", cy + 270 * Math.sin(borderRad));
+          line.setAttribute("x2", cx + 259 * Math.cos(borderRad)); line.setAttribute("y2", cy + 259 * Math.sin(borderRad));
+          line.setAttribute("stroke", "#5e481b"); line.setAttribute("stroke-width", "0.6");
+          constRing.appendChild(line);
+
+          const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          text.setAttribute("x", tx); text.setAttribute("y", ty);
+          text.setAttribute("text-anchor", "middle"); text.setAttribute("dominant-baseline", "central");
+          text.setAttribute("fill", "#dfca89"); text.setAttribute("font-size", "7.5");
+          text.setAttribute("font-family", "'Shippori Mincho', serif");
+          text.setAttribute("transform", `rotate(${midDeg + 90}, ${tx}, ${ty})`);
+          text.textContent = c.name;
+          constRing.appendChild(text);
+        });
+      }
+
+      // 3. 【本物志向最重要】正針百二十分金（120分金環：r=238〜258）
+      const fenjinRing = document.getElementById("svgFenjinRing");
+      if (fenjinRing) {
+        fenjinRing.innerHTML = "";
+        for (let i = 0; i < 120; i++) {
+          const midDeg = i * 3;
+          const startDeg = midDeg - 1.5;
+          const endDeg = midDeg + 1.5;
+          const fj = FENJIN_120_NAMES[i];
+          const isWangxiang = fj.type === "旺相";
+          const isKongwang = fj.type === "空亡";
+
+          // 区切り線
+          const borderRad = (startDeg - 90) * Math.PI / 180;
+          const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+          line.setAttribute("x1", cx + 258 * Math.cos(borderRad)); line.setAttribute("y1", cy + 258 * Math.sin(borderRad));
+          line.setAttribute("x2", cx + 238 * Math.cos(borderRad)); line.setAttribute("y2", cy + 238 * Math.sin(borderRad));
+          line.setAttribute("stroke", isWangxiang ? "rgba(229,62,62,0.6)" : "rgba(100,75,25,0.4)");
+          line.setAttribute("stroke-width", isWangxiang ? "0.8" : "0.4");
+          fenjinRing.appendChild(line);
+
+          // 旺相（丙・庚・丁・辛干）および空亡を金赤文字で刻印
+          if (isWangxiang || isKongwang) {
+            const rad = (midDeg - 90) * Math.PI / 180;
+            const tx = cx + 248 * Math.cos(rad);
+            const ty = cy + 248 * Math.sin(rad);
+            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            text.setAttribute("x", tx); text.setAttribute("y", ty);
+            text.setAttribute("text-anchor", "middle"); text.setAttribute("dominant-baseline", "central");
+            text.setAttribute("fill", isWangxiang ? "#fef08a" : "#f87171");
+            text.setAttribute("font-size", isWangxiang ? "6.8" : "5.5");
+            text.setAttribute("font-weight", isWangxiang ? "bold" : "normal");
+            text.setAttribute("font-family", "'Shippori Mincho', serif");
+            text.setAttribute("transform", `rotate(${midDeg + 90}, ${tx}, ${ty})`);
+            text.textContent = isWangxiang ? fj.gan : "●";
+            fenjinRing.appendChild(text);
+          }
+        }
+      }
+
+      // 4. 【本物志向】八煞黄泉環（黄泉八煞：r=222〜238）
+      const huangquanRing = document.getElementById("svgHuangquanRing");
+      if (huangquanRing) {
+        huangquanRing.innerHTML = "";
+        HUANGQUAN_RULES.forEach((hq, idx) => {
+          const midDeg = idx * 45;
+          const rad = (midDeg - 90) * Math.PI / 180;
+          const tx = cx + 230 * Math.cos(rad);
+          const ty = cy + 230 * Math.sin(rad);
+          const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          text.setAttribute("x", tx); text.setAttribute("y", ty);
+          text.setAttribute("text-anchor", "middle"); text.setAttribute("dominant-baseline", "central");
+          text.setAttribute("fill", "#fca5a5"); text.setAttribute("font-size", "7.0");
+          text.setAttribute("font-weight", "600");
+          text.setAttribute("font-family", "'Shippori Mincho', serif");
+          text.setAttribute("transform", `rotate(${midDeg + 90}, ${tx}, ${ty})`);
+          text.textContent = `${hq.shaMount}煞`;
+          huangquanRing.appendChild(text);
+        });
+      }
+
+      // 5. 二十四節気 (r=208〜222)
+      const solarRing = document.getElementById("svgSolarTermsRing");
+      if (solarRing) {
+        solarRing.innerHTML = "";
+        SOLAR_TERMS.forEach((term, i) => {
+          const midDeg = i * 15;
+          const rad = (midDeg - 90) * Math.PI / 180;
+          const tx = cx + 215 * Math.cos(rad);
+          const ty = cy + 215 * Math.sin(rad);
+          const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          text.setAttribute("x", tx); text.setAttribute("y", ty);
+          text.setAttribute("text-anchor", "middle"); text.setAttribute("dominant-baseline", "central");
+          text.setAttribute("fill", (term === "冬至" || term === "夏至" || term === "春分" || term === "秋分") ? "#fef08a" : "#bca362");
+          text.setAttribute("font-size", "7.2"); text.setAttribute("font-family", "'Shippori Mincho', serif");
+          text.setAttribute("transform", `rotate(${midDeg + 90}, ${tx}, ${ty})`);
+          text.textContent = term;
+          solarRing.appendChild(text);
+        });
+      }
+
+      // 6. 二十四山 (r=164〜206, 地盤正針)
+      const mountainRing = document.getElementById("svgMountainRing");
+      if (mountainRing) {
+        mountainRing.innerHTML = "";
+        MOUNTAINS.forEach((m, idx) => {
+          const startDeg = m.deg - 7.5, endDeg = m.deg + 7.5;
+          let fillColor = (idx % 2 === 0) ? "#1f1b25" : "#17151e";
+          if (m.name.includes("子") || m.name.includes("午") || m.name.includes("卯") || m.name.includes("酉")) {
+            fillColor = "#3b1115"; // 四正（子午卯酉）は伝統深紅座
+          }
+          const pathStr = createDonutPath(cx, cy, 164, 206, startDeg, endDeg);
+          const pathEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          pathEl.setAttribute("d", pathStr); pathEl.setAttribute("fill", fillColor);
+          pathEl.setAttribute("stroke", "#68511d"); pathEl.setAttribute("stroke-width", "0.7");
+          mountainRing.appendChild(pathEl);
+
+          const rad = (m.deg - 90) * Math.PI / 180;
+          const tx = cx + 185 * Math.cos(rad);
+          const ty = cy + 185 * Math.sin(rad);
+          const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          text.setAttribute("x", tx); text.setAttribute("y", ty);
+          text.setAttribute("text-anchor", "middle"); text.setAttribute("dominant-baseline", "central");
+          text.setAttribute("fill", (m.name.includes("子") || m.name.includes("午")) ? "#fef08a" : "#e5c875");
+          text.setAttribute("font-size", "14.5"); text.setAttribute("font-weight", "700");
+          text.setAttribute("font-family", "'Shippori Mincho', serif");
+          text.setAttribute("transform", `rotate(${m.deg + 90}, ${tx}, ${ty})`);
+          text.textContent = m.name[0];
+          mountainRing.appendChild(text);
+        });
+      }
+
+      // 7. 後天八卦 (r=122〜162)
+      const baguaRing = document.getElementById("svgBaguaRing");
+      if (baguaRing) {
+        baguaRing.innerHTML = "";
+        EIGHT_BAGUA.forEach((b, idx) => {
+          const startDeg = b.deg - 22.5, endDeg = b.deg + 22.5;
+          const pathStr = createDonutPath(cx, cy, 122, 162, startDeg, endDeg);
+          const pathEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          pathEl.setAttribute("d", pathStr); pathEl.setAttribute("fill", (idx % 2 === 0) ? "#15131a" : "#1e1a26");
+          pathEl.setAttribute("stroke", "#d4af37"); pathEl.setAttribute("stroke-width", "1");
+          baguaRing.appendChild(pathEl);
+
+          const rad = (b.deg - 90) * Math.PI / 180;
+          const tx = cx + 142 * Math.cos(rad);
+          const ty = cy + 142 * Math.sin(rad);
+          const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          text.setAttribute("x", tx); text.setAttribute("y", ty);
+          text.setAttribute("text-anchor", "middle"); text.setAttribute("dominant-baseline", "central");
+          text.setAttribute("fill", "#f0ede6"); text.setAttribute("font-size", "12.5");
+          text.setAttribute("font-weight", "600"); text.setAttribute("font-family", "'Shippori Mincho', serif");
+          text.setAttribute("transform", `rotate(${b.deg + 90}, ${tx}, ${ty})`);
+          text.textContent = `${b.symbol} ${b.key}`;
+          baguaRing.appendChild(text);
+        });
+      }
+
+      // 8. 九星 (r=86〜120)
+      const nineRing = document.getElementById("svgNineStarsRing");
+      if (nineRing) {
+        nineRing.innerHTML = "";
+        NINE_STARS.forEach((s) => {
+          const rad = (s.deg - 90) * Math.PI / 180;
+          const tx = cx + 102 * Math.cos(rad);
+          const ty = cy + 102 * Math.sin(rad);
+          const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          text.setAttribute("x", tx); text.setAttribute("y", ty);
+          text.setAttribute("text-anchor", "middle"); text.setAttribute("dominant-baseline", "central");
+          text.setAttribute("fill", "#c5aa5a"); text.setAttribute("font-size", "9.5");
+          text.setAttribute("font-family", "'Shippori Mincho', serif");
+          text.setAttribute("transform", `rotate(${s.deg + 90}, ${tx}, ${ty})`);
+          text.textContent = s.short;
+          nineRing.appendChild(text);
+        });
+      }
+    }
+
+    function createDonutPath(cx, cy, rInner, rOuter, startAngle, endAngle) {
+      const rad1 = (startAngle - 90) * Math.PI / 180;
+      const rad2 = (endAngle - 90) * Math.PI / 180;
+      const x1 = cx + rOuter * Math.cos(rad1), y1 = cy + rOuter * Math.sin(rad1);
+      const x2 = cx + rOuter * Math.cos(rad2), y2 = cy + rOuter * Math.sin(rad2);
+      const x3 = cx + rInner * Math.cos(rad2), y3 = cy + rInner * Math.sin(rad2);
+      const x4 = cx + rInner * Math.cos(rad1), y4 = cy + rInner * Math.sin(rad1);
+      const largeArc = (endAngle - startAngle) > 180 ? 1 : 0;
+      return `M ${x1} ${y1} A ${rOuter} ${rOuter} 0 ${largeArc} 1 ${x2} ${y2} L ${x3} ${y3} A ${rInner} ${rInner} 0 ${largeArc} 0 ${x4} ${y4} Z`;
+    }
+
+    /* ========================================================
+       4. 本命卦（八宅風水）自動計算
+       ======================================================== */
+    function populateYearSelect() {
+      const select = document.getElementById("birthYearSelect");
+      for (let y = 2026; y >= 1930; y--) {
+        const opt = document.createElement("option");
+        opt.value = y;
+        opt.textContent = `${y}年 (昭和/平成/令和)`;
+        if (y === 1980) opt.selected = true;
+        select.appendChild(opt);
+      }
+    }
+
+    function calculateKuaNumber(year, gender) {
+      let sum = String(year).split("").reduce((acc, c) => acc + parseInt(c), 0);
+      while (sum > 9) sum = String(sum).split("").reduce((acc, c) => acc + parseInt(c), 0);
+
+      let kuaNum = 0;
+      if (year < 2000) {
+        kuaNum = (gender === "male") ? (10 - sum) : (sum + 5);
+        if (gender === "female" && kuaNum > 9) kuaNum -= 9;
+      } else {
+        kuaNum = (gender === "male") ? (9 - sum) : (sum + 6);
+        if (gender === "male" && kuaNum <= 0) kuaNum += 9;
+        while (gender === "female" && kuaNum > 9) kuaNum -= 9;
+      }
+
+      if (kuaNum === 5) kuaNum = (gender === "male") ? 2 : 8;
+
+      const map = {
+        1: { key: "kan", name: "坎命 (かんめい)", group: "東四命", elem: "水" },
+        2: { key: "kun", name: "坤命 (こんめい)", group: "西四命", elem: "土" },
+        3: { key: "zhen", name: "震命 (しんめい)", group: "東四命", elem: "木" },
+        4: { key: "xun", name: "巽命 (そんめい)", group: "東四命", elem: "木" },
+        6: { key: "qian", name: "乾命 (けんめい)", group: "西四命", elem: "金" },
+        7: { key: "dui", name: "兌命 (だめい)", group: "西四命", elem: "金" },
+        8: { key: "gen", name: "艮命 (ごんめい)", group: "西四命", elem: "土" },
+        9: { key: "li", name: "離命 (りめい)", group: "東四命", elem: "火" }
+      };
+      return map[kuaNum] || map[6];
+    }
+
+    /* ========================================================
+       5. 【革新差別化機能 A】Three.js 3D立体工芸羅盤
+       ======================================================== */
+    let threeRenderer, threeScene, threeCamera;
+    let threeLuopanGroup, threeDialDisc, threeNeedleMesh;
+    let is3DInitialized = false;
+
+    // 自前Canvasで高精細金箔テクスチャをプロシージャル生成（外部画像・CORS問題完全回避）
+    function createProceduralDialTexture() {
+      const canvas = document.createElement("canvas");
+      canvas.width = 1024;
+      canvas.height = 1024;
+      const ctx = canvas.getContext("2d");
+      const cx = 512, cy = 512;
+
+      // 漆黒ベース
+      const grad = ctx.createRadialGradient(cx, cy, 50, cx, cy, 512);
+      grad.addColorStop(0, "#221d28");
+      grad.addColorStop(0.7, "#110e16");
+      grad.addColorStop(1, "#060508");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 1024, 1024);
+
+      // 外周金環
+      ctx.strokeStyle = "#d4af37";
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 500, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // 二十四山
+      ctx.font = "bold 28px 'Shippori Mincho', serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      MOUNTAINS.forEach(m => {
+        const rad = (m.deg - 90) * Math.PI / 180;
+        const tx = cx + 330 * Math.cos(rad);
+        const ty = cy + 330 * Math.sin(rad);
+        ctx.save();
+        ctx.translate(tx, ty);
+        ctx.rotate((m.deg + 90) * Math.PI / 180);
+        ctx.fillStyle = (m.name.includes("子") || m.name.includes("午")) ? "#fef08a" : "#d4af37";
+        ctx.fillText(m.name[0], 0, 0);
+        ctx.restore();
+      });
+
+      // 八卦
+      ctx.font = "26px 'Shippori Mincho', serif";
+      EIGHT_BAGUA.forEach(b => {
+        const rad = (b.deg - 90) * Math.PI / 180;
+        const tx = cx + 240 * Math.cos(rad);
+        const ty = cy + 240 * Math.sin(rad);
+        ctx.save();
+        ctx.translate(tx, ty);
+        ctx.rotate((b.deg + 90) * Math.PI / 180);
+        ctx.fillStyle = "#f5f4f0";
+        ctx.fillText(`${b.symbol} ${b.key}`, 0, 0);
+        ctx.restore();
+      });
+
+      return new THREE.CanvasTexture(canvas);
+    }
+
+    function init3DLuopan() {
+      if (is3DInitialized || typeof THREE === "undefined") return;
+      const container = document.getElementById("threeLuopanWrapper");
+      const canvas = document.getElementById("threeLuopanCanvas");
+
+      threeScene = new THREE.Scene();
+      threeCamera = new THREE.PerspectiveCamera(40, container.clientWidth / container.clientHeight, 0.1, 100);
+      threeCamera.position.set(0, 4.6, 3.4);
+      threeCamera.lookAt(0, 0, 0);
+
+      threeRenderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+      threeRenderer.setSize(container.clientWidth, container.clientHeight);
+      threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      threeRenderer.shadowMap.enabled = true;
+
+      // 照明（リアルな真鍮と木目のハイライト）
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+      threeScene.add(ambientLight);
+
+      const spotLight = new THREE.SpotLight(0xfff5d0, 1.8);
+      spotLight.position.set(2, 6, 3);
+      spotLight.angle = Math.PI / 4;
+      spotLight.penumbra = 0.5;
+      spotLight.castShadow = true;
+      threeScene.add(spotLight);
+
+      const pointLightRed = new THREE.PointLight(0xff2222, 0.8, 5);
+      pointLightRed.position.set(-2, 1, 1);
+      threeScene.add(pointLightRed);
+
+      threeLuopanGroup = new THREE.Group();
+
+      // 1. 高級電木（朱漆ベークライト）台座
+      const baseGeo = new THREE.BoxGeometry(3.6, 0.45, 3.6);
+      const baseMat = new THREE.MeshStandardMaterial({
+        color: 0x6e1010,
+        roughness: 0.35,
+        metalness: 0.15
+      });
+      const baseMesh = new THREE.Mesh(baseGeo, baseMat);
+      baseMesh.position.y = -0.22;
+      baseMesh.receiveShadow = true;
+      threeLuopanGroup.add(baseMesh);
+
+      // 真鍮コーナー装飾（四隅）
+      const brassCornerMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, roughness: 0.3, metalness: 0.8 });
+      [[-1.65, -1.65], [1.65, -1.65], [-1.65, 1.65], [1.65, 1.65]].forEach(([x, z]) => {
+        const cMesh = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.48, 0.35), brassCornerMat);
+        cMesh.position.set(x, -0.22, z);
+        threeLuopanGroup.add(cMesh);
+      });
+
+      // 2. 回転する天盤（内盤円形）
+      const dialTexture = createProceduralDialTexture();
+      const dialGeo = new THREE.CylinderGeometry(1.6, 1.6, 0.15, 64);
+      const dialMat = new THREE.MeshStandardMaterial({
+        map: dialTexture,
+        roughness: 0.4,
+        metalness: 0.25
+      });
+      threeDialDisc = new THREE.Mesh(dialGeo, dialMat);
+      threeDialDisc.position.y = 0.08;
+      threeLuopanGroup.add(threeDialDisc);
+
+      // 天池（中央ガラス＆真鍮リング）
+      const tianchiRing = new THREE.Mesh(
+        new THREE.TorusGeometry(0.38, 0.04, 16, 48),
+        new THREE.MeshStandardMaterial({ color: 0xd4af37, roughness: 0.2, metalness: 0.85 })
+      );
+      tianchiRing.rotation.x = Math.PI / 2;
+      tianchiRing.position.y = 0.18;
+      threeLuopanGroup.add(tianchiRing);
+
+      // 天池ガラスドーム
+      const glassDome = new THREE.Mesh(
+        new THREE.SphereGeometry(0.36, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2),
+        new THREE.MeshPhysicalMaterial({
+          color: 0xffffff,
+          transmission: 0.9,
+          opacity: 0.8,
+          transparent: true,
+          roughness: 0.1,
+          ior: 1.5
+        })
+      );
+      glassDome.position.y = 0.18;
+      threeLuopanGroup.add(glassDome);
+
+      // 立体磁針
+      const needleGroup = new THREE.Group();
+      needleGroup.position.y = 0.22;
+
+      // 北針（赤）
+      const nCone = new THREE.Mesh(
+        new THREE.ConeGeometry(0.04, 0.28, 16),
+        new THREE.MeshStandardMaterial({ color: 0xe53e3e, roughness: 0.2, metalness: 0.5 })
+      );
+      nCone.rotation.x = Math.PI / 2;
+      nCone.position.z = -0.14;
+      needleGroup.add(nCone);
+
+      // 南針（銀白）
+      const sCone = new THREE.Mesh(
+        new THREE.ConeGeometry(0.04, 0.28, 16),
+        new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.2, metalness: 0.8 })
+      );
+      sCone.rotation.x = -Math.PI / 2;
+      sCone.position.z = 0.14;
+      needleGroup.add(sCone);
+
+      threeNeedleMesh = needleGroup;
+      threeLuopanGroup.add(threeNeedleMesh);
+
+      threeScene.add(threeLuopanGroup);
+
+      // ドラッグ回転操作
+      let isDragging3D = false;
+      let prevMouseX = 0, prevMouseY = 0;
+      canvas.addEventListener("pointerdown", (e) => {
+        isDragging3D = true;
+        prevMouseX = e.clientX;
+        prevMouseY = e.clientY;
+        canvas.setPointerCapture(e.pointerId);
+      });
+      canvas.addEventListener("pointermove", (e) => {
+        if (!isDragging3D) return;
+        const deltaX = e.clientX - prevMouseX;
+        const deltaY = e.clientY - prevMouseY;
+        threeLuopanGroup.rotation.y += deltaX * 0.01;
+        threeLuopanGroup.rotation.x = Math.max(-0.4, Math.min(0.6, threeLuopanGroup.rotation.x + deltaY * 0.01));
+        prevMouseX = e.clientX;
+        prevMouseY = e.clientY;
+      });
+      canvas.addEventListener("pointerup", (e) => {
+        isDragging3D = false;
+        try { canvas.releasePointerCapture(e.pointerId); } catch(err){}
+      });
+
+      is3DInitialized = true;
+      animate3D();
+    }
+
+    function animate3D() {
+      requestAnimationFrame(animate3D);
+      if (!is3DInitialized) return;
+      // 方位に合わせた天盤回転（反時計回り）
+      if (threeDialDisc) {
+        threeDialDisc.rotation.y = THREE.MathUtils.lerp(threeDialDisc.rotation.y, (currentDegree * Math.PI / 180), 0.15);
+      }
+      threeRenderer.render(threeScene, threeCamera);
+    }
+
+    /* ========================================================
+       6. 【革新差別化機能 B】3D間取り・気の流れ実験室
+       ======================================================== */
+    let studioScene, studioCamera, studioRenderer;
+    let studioBedMesh, studioDeskMesh, studioPlantMesh, studioBellMesh;
+    let studioParticles;
+    let isStudioInitialized = false;
+
+    let bedRotationAngle = 0; // 0:北, 90:東, 180:南, 270:西
+    let deskRotationAngle = 315; // デフォルト北西（乾山）
+    let isPlantActive = true;
+    let isBellActive = false;
+
+    function initStudioScene() {
+      if (isStudioInitialized || typeof THREE === "undefined") return;
+      const canvas = document.getElementById("studioCanvas");
+      const w = canvas.parentElement.clientWidth;
+      const h = canvas.parentElement.clientHeight;
+
+      studioScene = new THREE.Scene();
+      studioCamera = new THREE.PerspectiveCamera(45, w / h, 0.1, 100);
+      studioCamera.position.set(4.5, 4.2, 4.5);
+      studioCamera.lookAt(0, 0, 0);
+
+      studioRenderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+      studioRenderer.setSize(w, h);
+      studioRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+      // 部屋の照明
+      studioScene.add(new THREE.AmbientLight(0xffffff, 0.6));
+      const roomLight = new THREE.DirectionalLight(0xfff0d0, 1.2);
+      roomLight.position.set(3, 5, 2);
+      studioScene.add(roomLight);
+
+      // 部屋の床（畳・フローリング風アイソメトリック）
+      const floorGeo = new THREE.BoxGeometry(3.6, 0.1, 3.6);
+      const floorMat = new THREE.MeshStandardMaterial({ color: 0x1f192b, roughness: 0.5 });
+      const floor = new THREE.Mesh(floorGeo, floorMat);
+      floor.position.y = -0.05;
+      studioScene.add(floor);
+
+      // 壁（奥と左壁）
+      const wallMat = new THREE.MeshStandardMaterial({ color: 0x2b2538, roughness: 0.7 });
+      const wallBack = new THREE.Mesh(new THREE.BoxGeometry(3.6, 1.8, 0.1), wallMat);
+      wallBack.position.set(0, 0.85, -1.8);
+      studioScene.add(wallBack);
+
+      const wallLeft = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.8, 3.6), wallMat);
+      wallLeft.position.set(-1.8, 0.85, 0);
+      studioScene.add(wallLeft);
+
+      // 家具1：ワークデスク＆PC
+      const deskGroup = new THREE.Group();
+      const deskTable = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.65, 0.6), new THREE.MeshStandardMaterial({ color: 0x8c6d1f, roughness: 0.3 }));
+      deskTable.position.y = 0.325;
+      deskGroup.add(deskTable);
+      const laptop = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.05, 0.22), new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.2 }));
+      laptop.position.set(0, 0.67, 0);
+      deskGroup.add(laptop);
+      deskGroup.position.set(-0.6, 0, 0.6);
+      studioDeskMesh = deskGroup;
+      studioScene.add(studioDeskMesh);
+
+      // 家具2：ベッド＆枕
+      const bedGroup = new THREE.Group();
+      const bedFrame = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.4, 1.6), new THREE.MeshStandardMaterial({ color: 0x4a3b63, roughness: 0.6 }));
+      bedFrame.position.y = 0.2;
+      bedGroup.add(bedFrame);
+      const pillow = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.12, 0.35), new THREE.MeshStandardMaterial({ color: 0xf5f4f0, roughness: 0.8 }));
+      pillow.position.set(0, 0.45, -0.6);
+      bedGroup.add(pillow);
+      bedGroup.position.set(0.8, 0, -0.6);
+      studioBedMesh = bedGroup;
+      studioScene.add(studioBedMesh);
+
+      // 化殺アイテム1：観葉植物（パキラ）
+      const plantGroup = new THREE.Group();
+      const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.14, 0.35, 16), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 }));
+      pot.position.y = 0.175;
+      plantGroup.add(pot);
+      const foliage = new THREE.Mesh(new THREE.DodecahedronGeometry(0.3), new THREE.MeshStandardMaterial({ color: 0x228b22, roughness: 0.7 }));
+      foliage.position.y = 0.48;
+      plantGroup.add(foliage);
+      plantGroup.position.set(-1.4, 0, -1.4); // 部屋の隅
+      studioPlantMesh = plantGroup;
+      studioScene.add(studioPlantMesh);
+
+      // 化殺アイテム2：真鍮風鈴・金属ベル
+      const bellGeo = new THREE.ConeGeometry(0.12, 0.25, 16);
+      const bellMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, roughness: 0.2, metalness: 0.9 });
+      studioBellMesh = new THREE.Mesh(bellGeo, bellMat);
+      studioBellMesh.position.set(-1.3, 1.3, 0);
+      studioScene.add(studioBellMesh);
+
+      // 気の流れ（光流パーティクル）
+      const pCount = 80;
+      const pGeo = new THREE.BufferGeometry();
+      const pPos = new Float32Array(pCount * 3);
+      for (let i = 0; i < pCount * 3; i += 3) {
+        pPos[i] = (Math.random() - 0.5) * 3.2;
+        pPos[i + 1] = Math.random() * 1.5 + 0.1;
+        pPos[i + 2] = (Math.random() - 0.5) * 3.2;
+      }
+      pGeo.setAttribute("position", new THREE.BufferAttribute(pPos, 3));
+      const pMat = new THREE.PointsMaterial({ color: 0xfef08a, size: 0.08, transparent: true, opacity: 0.85 });
+      studioParticles = new THREE.Points(pGeo, pMat);
+      studioScene.add(studioParticles);
+
+      isStudioInitialized = true;
+      updateStudioEvaluation();
+      animateStudio();
+    }
+
+    function animateStudio() {
+      requestAnimationFrame(animateStudio);
+      if (!isStudioInitialized) return;
+
+      // パーティクル気流の緩やかな浮遊アニメーション
+      const positions = studioParticles.geometry.attributes.position.array;
+      for (let i = 1; i < positions.length; i += 3) {
+        positions[i] += 0.006;
+        if (positions[i] > 1.8) positions[i] = 0.1;
+      }
+      studioParticles.geometry.attributes.position.needsUpdate = true;
+
+      studioRenderer.render(studioScene, studioCamera);
+    }
+
+    // 3Dスタジオの総合開運スコアと気流診断
+    function updateStudioEvaluation() {
+      if (!isStudioInitialized) return;
+      const deskBagua = getBaguaByDeg(deskRotationAngle);
+      const bedBagua = getBaguaByDeg(bedRotationAngle);
+      const deskScore = KUA_TABLE[currentKua.key][deskBagua.key].score;
+      const bedScore = KUA_TABLE[currentKua.key][bedBagua.key].score;
+
+      let totalScore = 65 + deskScore + bedScore;
+      if (isPlantActive) totalScore += 10;
+      if (isBellActive) totalScore += 8;
+      totalScore = Math.max(10, Math.min(99, totalScore));
+
+      const scoreEl = document.getElementById("studioScoreNumber");
+      const rankEl = document.getElementById("studioScoreRank");
+      const diagEl = document.getElementById("studioDiagnosisText");
+
+      scoreEl.textContent = `${totalScore}点`;
+
+      if (totalScore >= 85) {
+        scoreEl.style.color = "#bbf7d0";
+        rankEl.textContent = "✨ 大吉空間（調和度 極）";
+      } else if (totalScore >= 60) {
+        scoreEl.style.color = "#93c5fd";
+        rankEl.textContent = "🌤️ 良好空間（安定発展）";
+      } else {
+        scoreEl.style.color = "#fca5a5";
+        rankEl.textContent = "⚠️ 要化殺空間（気が停滞気味）";
+      }
+
+      diagEl.innerHTML = `
+        <strong>【3D気流リアルタイム診断】</strong><br>
+        💻 ワークデスク：向いている方位【${deskBagua.dir}】（${KUA_TABLE[currentKua.key][deskBagua.key].name}）<br>
+        🛏️ ベッド枕：向いている方位【${bedBagua.dir}】（${KUA_TABLE[currentKua.key][bedBagua.key].name}）<br>
+        🪴 化殺アイテム：${isPlantActive ? "観葉植物で角の殺気を浄化中" : "なし"}${isBellActive ? " ｜ 真鍮ベルで金気を補強中" : ""}<br>
+        <em>アドバイス：家具の向きボタンを押して吉方位（生気・天医）へ回すと気が活性化します。</em>
+      `;
+
+      // パーティクルの色変化
+      if (studioParticles) {
+        studioParticles.material.color.setHex(totalScore >= 80 ? 0xfef08a : (totalScore >= 60 ? 0x93c5fd : 0xf87171));
+      }
+    }
+
+    /* ========================================================
+       7. アプリケーションステート＆画面更新
+       ======================================================== */
+    let currentDegree = 0;
+    let isCompassActive = false;
+    let isARActive = false;
+    let isHeld = false;
+    let currentKua = calculateKuaNumber(1980, "male");
+    let currentRoom = "entrance";
+    let lastManualTime = 0; // 手動操作の時刻（センサーによる強制上書きを一時防ぐ）
+
+    const luopanDial = document.getElementById("luopanDial");
+    const dispDegree = document.getElementById("dispDegree");
+    const dispEightDir = document.getElementById("dispEightDir");
+    const dispKuaGroup = document.getElementById("dispKuaGroup");
+    const dispMountain = document.getElementById("dispMountain");
+    const dispWuxing = document.getElementById("dispWuxing");
+    const angleRange = document.getElementById("angleRange");
+    const sliderValDisplay = document.getElementById("sliderValDisplay");
+    const levelBubble = document.getElementById("levelBubble");
+    const levelDot = document.getElementById("levelDot");
+
+    const btnCompass = document.getElementById("btnCompass");
+    const sensorBtnLabel = document.getElementById("sensorBtnLabel");
+    const btnAR = document.getElementById("btnAR");
+    const arBtnLabel = document.getElementById("arBtnLabel");
+    const cameraVideo = document.getElementById("cameraVideo");
+    const btnHold = document.getElementById("btnHold");
+    const holdBtnLabel = document.getElementById("holdBtnLabel");
+    const btnRecord = document.getElementById("btnRecord");
+    const btnSound = document.getElementById("btnSound");
+    const soundText = document.getElementById("soundText");
+    const sensorStatusIndicator = document.getElementById("sensorStatusIndicator");
+
+    const birthYearSelect = document.getElementById("birthYearSelect");
+    const genderSelect = document.getElementById("genderSelect");
+    const btnCalculateKua = document.getElementById("btnCalculateKua");
+    const kuaNameDisplay = document.getElementById("kuaNameDisplay");
+    const kuaElementDisplay = document.getElementById("kuaElementDisplay");
+    const kuaGroupBadge = document.getElementById("kuaGroupBadge");
+
+    const fortuneBanner = document.getElementById("fortuneBanner");
+    const fortuneTitle = document.getElementById("fortuneTitle");
+    const fortuneDesc = document.getElementById("fortuneDesc");
+    const fortuneLevelPill = document.getElementById("fortuneLevelPill");
+    const prescriptionList = document.getElementById("prescriptionList");
+
+    function getMountainByDeg(deg) {
+      const norm = (deg % 360 + 360) % 360;
+      for (let m of MOUNTAINS) {
+        let diff = Math.abs(norm - m.deg);
+        if (diff > 180) diff = 360 - diff;
+        if (diff <= 7.5) return m;
+      }
+      return MOUNTAINS[0];
+    }
+
+    function getBaguaByDeg(deg) {
+      const norm = (deg % 360 + 360) % 360;
+      for (let b of EIGHT_BAGUA) {
+        let diff = Math.abs(norm - b.deg);
+        if (diff > 180) diff = 360 - diff;
+        if (diff <= 22.5) return b;
+      }
+      return EIGHT_BAGUA[0];
+    }
+
+    function setHeading(deg) {
+      if (isHeld) return;
+      currentDegree = Math.round((deg % 360 + 360) % 360);
+
+      if (Math.abs(currentDegree - lastClickDeg) >= 15 || Math.abs(currentDegree - lastClickDeg) === 0) {
+        playDialTick();
+        lastClickDeg = currentDegree;
+      }
+
+      // 2D盤の回転
+      if (luopanDial) luopanDial.style.transform = `rotate(${-currentDegree}deg)`;
+
+      dispDegree.textContent = `${currentDegree}°`;
+      sliderValDisplay.textContent = `${currentDegree}°`;
+      angleRange.value = currentDegree;
+
+      const m = getMountainByDeg(currentDegree);
+      const b = getBaguaByDeg(currentDegree);
+
+      dispEightDir.textContent = `${b.dir} (${m.dir})`;
+      dispKuaGroup.textContent = `${b.group}方位`;
+      dispMountain.textContent = m.name;
+      dispWuxing.textContent = `五行：${m.wuxing} ｜ 陰陽：${m.yinyang} ｜ ${m.nature}`;
+
+      updateFortuneBanner(b);
+      renderPrescriptions();
+      updateStudioEvaluation();
+    }
+
+    function updateFortuneBanner(bagua) {
+      const table = KUA_TABLE[currentKua.key];
+      if (!table || !table[bagua.key]) return;
+      const evalData = table[bagua.key];
+      fortuneTitle.textContent = `${evalData.name}（${evalData.type}方位）`;
+      fortuneDesc.textContent = evalData.desc;
+      fortuneLevelPill.textContent = evalData.type;
+
+      fortuneBanner.className = "fortune-banner";
+      if (evalData.level === "great") fortuneBanner.classList.add("banner-great-auspicious");
+      else if (evalData.level === "good") fortuneBanner.classList.add("banner-auspicious");
+      else fortuneBanner.classList.add("banner-ominous");
+    }
+
+    function renderPrescriptions() {
+      const roomData = ROOM_PRESCRIPTIONS[currentRoom];
+      const bagua = getBaguaByDeg(currentDegree);
+      const evalData = KUA_TABLE[currentKua.key][bagua.key];
+      const isGood = evalData.level !== "bad";
+      const items = isGood ? roomData.good : roomData.bad;
+      prescriptionList.innerHTML = items.map(item => `
+        <div class="prescription-item">
+          <div class="prescription-icon">${item.icon}</div>
+          <div class="prescription-body">
+            <strong>${item.title}</strong>
+            <p>${item.text}</p>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    /* ========================================================
+       8. 3大モード切り替え＆イベントリスナー
+       ======================================================== */
+    const modeTabs = document.querySelectorAll(".mode-tab-btn");
+    modeTabs.forEach(tab => {
+      tab.addEventListener("click", () => {
+        initAudio();
+        modeTabs.forEach(t => t.classList.remove("active"));
+        tab.classList.add("active");
+        const targetView = tab.dataset.view;
+
+        document.querySelectorAll(".view-section").forEach(sec => sec.classList.remove("active"));
+        document.getElementById(targetView).classList.add("active");
+
+        if (targetView === "view3d") init3DLuopan();
+        if (targetView === "viewStudio") initStudioScene();
+      });
+    });
+
+    // 3Dスタジオボタン操作
+    document.getElementById("btnRotateDesk").addEventListener("click", () => {
+      initAudio();
+      deskRotationAngle = (deskRotationAngle + 45) % 360;
+      if (studioDeskMesh) studioDeskMesh.rotation.y = deskRotationAngle * Math.PI / 180;
+      updateStudioEvaluation();
+    });
+
+    document.getElementById("btnRotateBed").addEventListener("click", () => {
+      initAudio();
+      bedRotationAngle = (bedRotationAngle + 45) % 360;
+      if (studioBedMesh) studioBedMesh.rotation.y = bedRotationAngle * Math.PI / 180;
+      updateStudioEvaluation();
+    });
+
+    document.getElementById("btnTogglePlant").addEventListener("click", function() {
+      initAudio();
+      isPlantActive = !isPlantActive;
+      if (studioPlantMesh) studioPlantMesh.visible = isPlantActive;
+      this.classList.toggle("active", isPlantActive);
+      updateStudioEvaluation();
+    });
+
+    document.getElementById("btnToggleBell").addEventListener("click", function() {
+      initAudio();
+      isBellActive = !isBellActive;
+      if (studioBellMesh) studioBellMesh.visible = isBellActive;
+      this.classList.toggle("active", isBellActive);
+      updateStudioEvaluation();
+    });
+
+    // スライダー操作（※コンパス稼働中でも手動で自由に回せます）
+    angleRange.addEventListener("input", (e) => {
+      initAudio();
+      lastManualTime = Date.now();
+      setHeading(parseInt(e.target.value));
+    });
+
+    document.querySelectorAll(".nudge-btn[data-nudge]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        initAudio();
+        lastManualTime = Date.now();
+        const delta = parseInt(btn.dataset.nudge);
+        setHeading(currentDegree + delta);
+      });
+    });
+
+    btnHold.addEventListener("click", () => {
+      initAudio();
+      isHeld = !isHeld;
+      btnHold.classList.toggle("active", isHeld);
+      holdBtnLabel.textContent = isHeld ? "固定解除" : "測定値を固定";
+    });
+
+    btnSound.addEventListener("click", () => {
+      initAudio();
+      isSoundEnabled = !isSoundEnabled;
+      soundText.textContent = isSoundEnabled ? "音: ON" : "音: OFF";
+      btnSound.style.opacity = isSoundEnabled ? "1" : "0.6";
+    });
+
+    btnCalculateKua.addEventListener("click", () => {
+      initAudio();
+      const year = parseInt(birthYearSelect.value);
+      const gender = genderSelect.value;
+      currentKua = calculateKuaNumber(year, gender);
+      kuaNameDisplay.textContent = currentKua.name;
+      kuaElementDisplay.textContent = `五行：${currentKua.elem}`;
+      kuaGroupBadge.textContent = currentKua.group;
+      kuaGroupBadge.className = `kua-group-badge ${currentKua.group === "西四命" ? "group-west" : "group-east"}`;
+      setHeading(currentDegree);
+    });
+
+    document.querySelectorAll(".room-tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        initAudio();
+        document.querySelectorAll(".room-tab-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentRoom = btn.dataset.room;
+        renderPrescriptions();
+      });
+    });
+
+    // ========================================================
+    // コンパス＆ジャイロセンサー連動（iOS / Android / PC 完全対応）
+    // ========================================================
+    let lastSensorTime = 0;
+    let sensorHeadingReceived = false;
+
+    btnCompass.addEventListener("click", async () => {
+      initAudio();
+      if (isCompassActive) {
+        stopCompass();
+      } else {
+        await startCompass();
+      }
+    });
+
+    async function startCompass() {
+      sensorHeadingReceived = false;
+      // iOS 13+ 権限リクエスト
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        try {
+          const permission = await DeviceOrientationEvent.requestPermission();
+          if (permission === 'granted') {
+            attachOrientationListeners();
+          } else {
+            alert("方位センサーの利用が許可されませんでした。手動ダイヤルをご利用ください。");
+          }
+        } catch (e) {
+          console.warn("Permission request error:", e);
+          attachOrientationListeners();
+        }
+      } else {
+        attachOrientationListeners();
+      }
+    }
+
+    function attachOrientationListeners() {
+      // Android用（絶対方位コンパス）
+      if ('ondeviceorientationabsolute' in window) {
+        window.addEventListener("deviceorientationabsolute", handleDeviceOrientationAbsolute, true);
+      }
+      // iOS / 一般用
+      window.addEventListener("deviceorientation", handleDeviceOrientationStandard, true);
+
+      isCompassActive = true;
+      btnCompass.classList.add("active");
+      sensorBtnLabel.textContent = "コンパス稼働中 (タップで停止)";
+
+      // 3秒以内にセンサーから値が届かなかった場合の安心ガイド
+      setTimeout(() => {
+        if (isCompassActive && !sensorHeadingReceived) {
+          console.log("Sensor data not detected yet. Manual dial is fully active.");
+        }
+      }, 3000);
+    }
+
+    function stopCompass() {
+      if ('ondeviceorientationabsolute' in window) {
+        window.removeEventListener("deviceorientationabsolute", handleDeviceOrientationAbsolute, true);
+      }
+      window.removeEventListener("deviceorientation", handleDeviceOrientationStandard, true);
+
+      isCompassActive = false;
+      btnCompass.classList.remove("active");
+      sensorBtnLabel.textContent = "コンパス開始";
+      if (sensorStatusIndicator) {
+        sensorStatusIndicator.className = "sensor-status-indicator";
+        sensorStatusIndicator.innerHTML = `<span>📡</span> <span>手動シミュレーション中（ダイヤル・指で回転可能）</span>`;
+      }
+    }
+
+    // Android用：絶対方位コンパス
+    function handleDeviceOrientationAbsolute(event) {
+      if (!isCompassActive) return;
+      if (event.alpha !== null && event.alpha !== undefined) {
+        sensorHeadingReceived = true;
+        // Android Chrome: alphaは反時計回り (0〜360)
+        let heading = (360 - event.alpha) % 360;
+        processSensorHeading(heading, event.beta, event.gamma);
+      }
+    }
+
+    // iOS / 一般端末用
+    function handleDeviceOrientationStandard(event) {
+      if (!isCompassActive) return;
+
+      let heading = null;
+      if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null) {
+        // iOS Safari: webkitCompassHeading (0〜360、北=0)
+        heading = event.webkitCompassHeading;
+        sensorHeadingReceived = true;
+      } else if (event.absolute && event.alpha !== null && event.alpha !== undefined) {
+        // 標準絶対方位
+        heading = (360 - event.alpha) % 360;
+        sensorHeadingReceived = true;
+      } else if (!sensorHeadingReceived && event.alpha !== null && event.alpha !== undefined) {
+        // 相対方位フォールバック
+        heading = (360 - event.alpha) % 360;
+      }
+
+      processSensorHeading(heading, event.beta, event.gamma);
+    }
+
+    // センサーで検知した方位と傾きの統一処理
+    function processSensorHeading(heading, beta, gamma) {
+      lastSensorTime = Date.now();
+
+      // 手動操作（ドラッグやスライダー）から1.8秒以内は手動を優先
+      const isManualOverridden = (Date.now() - lastManualTime) < 1800;
+
+      if (heading !== null && !isManualOverridden && !isHeld) {
+        setHeading(heading);
+        if (sensorStatusIndicator) {
+          sensorStatusIndicator.className = "sensor-status-indicator tracking";
+          sensorStatusIndicator.innerHTML = `<span>🟢</span> <span>方位センサー追従中 (${Math.round(heading)}°)</span>`;
+        }
+      } else if (isManualOverridden && sensorStatusIndicator) {
+        sensorStatusIndicator.className = "sensor-status-indicator manual";
+        sensorStatusIndicator.innerHTML = `<span>👆</span> <span>手動ダイヤル操作中（少し待つとセンサー再開）</span>`;
+      }
+
+      // 水平気泡水準器（傾き）
+      const b = beta || 0;
+      const g = gamma || 0;
+      const clampX = Math.max(-15, Math.min(15, g * 1.5));
+      const clampY = Math.max(-4, Math.min(4, b * 0.5));
+      levelBubble.style.transform = `translate(${clampX}px, ${clampY}px)`;
+
+      const isLevelOk = Math.abs(b) <= 4 && Math.abs(g) <= 4;
+      levelDot.classList.toggle("level-ok", isLevelOk);
+      if (isLevelOk && !hasPlayedLevelOk) {
+        playLevelChime();
+        hasPlayedLevelOk = true;
+      } else if (!isLevelOk) {
+        hasPlayedLevelOk = false;
+      }
+
+      // 3D羅盤の傾きジャイロ連動
+      if (threeLuopanGroup && is3DInitialized) {
+        threeLuopanGroup.rotation.x = THREE.MathUtils.lerp(threeLuopanGroup.rotation.x, (b * Math.PI / 180) * 0.5, 0.1);
+        threeLuopanGroup.rotation.z = THREE.MathUtils.lerp(threeLuopanGroup.rotation.z, (-g * Math.PI / 180) * 0.5, 0.1);
+      }
+    }
+
+    // ARカメラ透かしモード
+    btnAR.addEventListener("click", async () => {
+      initAudio();
+      if (isARActive) stopARMode();
+      else await startARMode();
+    });
+
+    async function startARMode() {
+      try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          alert("お使いのブラウザはカメラアクセスに対応していません。");
+          return;
+        }
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" },
+          audio: false
+        });
+        cameraVideo.srcObject = stream;
+        await cameraVideo.play();
+        document.body.classList.add("ar-mode");
+        isARActive = true;
+        btnAR.classList.add("active");
+        arBtnLabel.textContent = "透かし解除";
+      } catch (err) {
+        alert("カメラの起動に失敗しました（権限が拒否されたか、未接続）。");
+      }
+    }
+
+    function stopARMode() {
+      if (cameraVideo.srcObject) {
+        cameraVideo.srcObject.getTracks().forEach(track => track.stop());
+        cameraVideo.srcObject = null;
+      }
+      document.body.classList.remove("ar-mode");
+      isARActive = false;
+      btnAR.classList.remove("active");
+      arBtnLabel.textContent = "カメラ透かし鑑定";
+    }
+
+    // 2D羅盤の指ドラッグ回転（※コンパス稼働中であっても手動操作が可能！）
+    let isDragging2D = false, startAngle2D = 0, baseAngle2D = 0;
+    luopanDial.addEventListener("pointerdown", (e) => {
+      initAudio();
+      isDragging2D = true;
+      lastManualTime = Date.now(); // 手動操作開始を記録
+      const rect = luopanDial.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+      startAngle2D = Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI;
+      baseAngle2D = currentDegree;
+      luopanDial.setPointerCapture(e.pointerId);
+    });
+
+    luopanDial.addEventListener("pointermove", (e) => {
+      if (!isDragging2D) return;
+      lastManualTime = Date.now(); // 手動操作中を継続
+      const rect = luopanDial.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+      const currentAngle = Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI;
+      setHeading(baseAngle2D - (currentAngle - startAngle2D));
+    });
+
+    luopanDial.addEventListener("pointerup", (e) => {
+      isDragging2D = false;
+      lastManualTime = Date.now();
+      try { luopanDial.releasePointerCapture(e.pointerId); } catch(err){}
+    });
+    luopanDial.addEventListener("pointercancel", () => { isDragging2D = false; });
+
+    /* ========================================================
+       9. わが家の風水カルテ
+       ======================================================== */
+    const recordPlaceSelect = document.getElementById("recordPlaceSelect");
+    const btnSaveRecord = document.getElementById("btnSaveRecord");
+    const btnClearRecords = document.getElementById("btnClearRecords");
+    const recordItemsContainer = document.getElementById("recordItemsContainer");
+    const STORAGE_KEY = "fengshui_luopan_records_v1";
+
+    function loadRecords() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch(e) { return []; }
+    }
+    function saveRecords(records) {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); } catch(e) {}
+    }
+
+    function renderRecordsList() {
+      const records = loadRecords();
+      if (records.length === 0) {
+        recordItemsContainer.innerHTML = `<div class="record-empty-notice">カルテはまだありません。「記録する」ボタンで自宅の方位を保存できます。</div>`;
+        return;
+      }
+      recordItemsContainer.innerHTML = records.map((r, idx) => `
+        <div class="record-item-card">
+          <div class="record-item-info">
+            <span class="record-place-badge">${r.place} ｜ ${r.heading}° (${r.mountain})</span>
+            <span class="record-detail-sub">${r.fortune} (${r.kua}命) ｜ ${r.time}</span>
+          </div>
+          <button class="record-delete-btn" data-del="${idx}" title="削除">🗑️</button>
+        </div>
+      `).join("");
+
+      document.querySelectorAll(".record-delete-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const idx = parseInt(btn.dataset.del);
+          const recs = loadRecords();
+          recs.splice(idx, 1);
+          saveRecords(recs);
+          renderRecordsList();
+        });
+      });
+    }
+
+    btnSaveRecord.addEventListener("click", () => {
+      initAudio();
+      const place = recordPlaceSelect.value;
+      const m = getMountainByDeg(currentDegree);
+      const b = getBaguaByDeg(currentDegree);
+      const evalData = KUA_TABLE[currentKua.key][b.key];
+      const now = new Date();
+      const timeStr = `${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+      const records = loadRecords();
+      records.unshift({
+        place: place, heading: currentDegree, mountain: m.name, dir: b.dir,
+        fortune: `${evalData.name}・${evalData.type}`, kua: currentKua.name.split(" ")[0], time: timeStr
+      });
+      saveRecords(records);
+      renderRecordsList();
+
+      btnSaveRecord.textContent = "記録完了！";
+      setTimeout(() => { btnSaveRecord.textContent = "記録する"; }, 1500);
+    });
+
+    btnRecord.addEventListener("click", () => {
+      document.querySelector(".record-card").scrollIntoView({ behavior: "smooth" });
+      btnSaveRecord.click();
+    });
+
+    btnClearRecords.addEventListener("click", () => {
+      if (confirm("記録した風水カルテをすべて消去しますか？")) {
+        saveRecords([]);
+        renderRecordsList();
+      }
+    });
+
+    /* ========================================================
+       10. AI（ChatGPT / Gemini / Claude）風水相談プロンプト連動
+       ======================================================== */
+    const fengShuiDilemmaInput = document.getElementById("fengShuiDilemmaInput");
+    const fengShuiPromptPreview = document.getElementById("fengShuiPromptPreview");
+    const btnCopyPrompt = document.getElementById("btnCopyPrompt");
+
+    function buildFengShuiPromptText(userText) {
+      const b = getBaguaByDeg(currentDegree);
+      const m = getMountainByDeg(currentDegree);
+      const evalData = KUA_TABLE[currentKua.key][b.key];
+      
+      const activeRoomBtn = document.querySelector(".room-tab-btn.active");
+      const currentRoomName = activeRoomBtn ? activeRoomBtn.textContent.trim() : "お部屋（全般）";
+      
+      const dilemma = userText && userText.trim() 
+        ? userText.trim() 
+        : "（例: この部屋を仕事机にしていますが、集中力が続きません。本命卦とこの方位の気の流れに合わせた家具の配置、おすすめの観葉植物やインテリア改善法を教えてください）";
+
+      return `あなたは伝統風水（玄空飛星派・八宅派）と現代インテリア空間心理学に精通した大人の風水コンサルタントです。
+私の住まいの羅盤測定データと以下の悩みに基づき、具体的で現実的な空間改善アドバイスをください。
+
+【測定方位】: ${b.dir}（${currentDegree}° ｜ 二十四山：${m.name} ｜ 八卦：${b.name}）
+【私の本命卦】: ${currentKua.name}（${currentKua.group}・五行：${currentKua.elem}）
+【この方位の八宅気配】: ${evalData.name}（${evalData.type} ｜ ${evalData.desc}）
+【現在の鑑定場所】: ${currentRoomName}
+
+【私の悩み・間取りの状況】:
+${dilemma}
+
+上記を踏まえ、迷信や不安を煽るオカルトにとどまらない、大人のための現実的で洗練された「インテリア配置・家具の向き・カラーコーディネート・風水化殺アイテム（観葉植物・鏡・照明・盛り塩など）」の3つの具体的アクションを提案してください。`;
+    }
+
+    function updateFengShuiPromptPreview() {
+      if (!fengShuiPromptPreview) return;
+      const val = fengShuiDilemmaInput ? fengShuiDilemmaInput.value : "";
+      fengShuiPromptPreview.textContent = buildFengShuiPromptText(val);
+    }
+
+    function onFengShuiDilemmaInput() {
+      updateFengShuiPromptPreview();
+    }
+
+    function selectFengShuiPromptText() {
+      const el = document.getElementById("fengShuiPromptPreview");
+      if (window.getSelection && document.createRange) {
+        const sel = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+    }
+
+    function copyFengShuiPrompt() {
+      const text = fengShuiPromptPreview.textContent;
+      const btn = document.getElementById("btnCopyPrompt");
+
+      const onSuccess = () => {
+        btn.textContent = "✅ コピー完了！";
+        btn.style.background = "#38a169";
+        btn.style.color = "#fff";
+        if ("vibrate" in navigator) { try { navigator.vibrate(30); } catch(e){} }
+        setTimeout(() => {
+          btn.textContent = "📋 コピー";
+          btn.style.background = "linear-gradient(135deg, #d4af37 0%, #b59a57 100%)";
+          btn.style.color = "#0b090e";
+        }, 2200);
+      };
+
+      const onFail = () => {
+        selectFengShuiPromptText();
+        btn.textContent = "⚠️ 長押しでコピー";
+        setTimeout(() => { btn.textContent = "📋 コピー"; }, 3000);
+      };
+
+      let copied = false;
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.top = "0";
+        ta.style.left = "0";
+        ta.style.width = "2em";
+        ta.style.height = "2em";
+        ta.style.padding = "0";
+        ta.style.border = "none";
+        ta.style.outline = "none";
+        ta.style.background = "transparent";
+        ta.setAttribute("readonly", "");
+        document.body.appendChild(ta);
+
+        if (navigator.userAgent.match(/ipad|ipod|iphone/i)) {
+          const range = document.createRange();
+          range.selectNodeContents(ta);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          ta.setSelectionRange(0, 999999);
+        } else {
+          ta.select();
+        }
+
+        copied = document.execCommand("copy");
+        document.body.removeChild(ta);
+      } catch (err) {
+        copied = false;
+      }
+
+      if (copied) {
+        onSuccess();
+        return;
+      }
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(onSuccess).catch(onFail);
+      } else {
+        onFail();
+      }
+    }
+
+    // ガイドモーダル
+    const guideModal = document.getElementById("guideModal");
+    document.getElementById("btnOpenGuide").addEventListener("click", () => guideModal.classList.add("open"));
+    document.getElementById("btnCloseGuide").addEventListener("click", () => guideModal.classList.remove("open"));
+    guideModal.addEventListener("click", (e) => { if (e.target === guideModal) guideModal.classList.remove("open"); });
+
+    // 初期化
+    populateYearSelect();
+    buildDetailedLuopanSVG();
+
+    // 全画面羅盤モード切り替えボタン
+    const btnFullscreenToggle = document.getElementById("btnFullscreenToggle");
+    if (btnFullscreenToggle) {
+      btnFullscreenToggle.addEventListener("click", (e) => {
+        e.stopPropagation();
+        document.body.classList.toggle("fullscreen-luopan-mode");
+        const isFull = document.body.classList.contains("fullscreen-luopan-mode");
+        btnFullscreenToggle.innerHTML = isFull ? '<span>✕</span><span>通常</span>' : '<span>⛶</span><span>全画面</span>';
+      });
+    }
+
+    setHeading(0);
+    updateFengShuiPromptPreview();
+    renderRecordsList();
+  </script>
+</body>
+</html>
