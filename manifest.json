@@ -2,21 +2,25 @@
   "name": "大人の本格風水羅盤ナビ",
   "short_name": "本格風水羅盤",
   "description": "実物大・高級電木三元三合綜合羅盤 ✕ リアルタイム電子コンパス ✕ 間取り気流シミュレーター",
+  "id": "./",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#0d0a10",
-  "theme_color": "#d4af37",
+  "theme_color": "#18131d",
   "orientation": "portrait",
   "icons": [
     {
       "src": "./icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "./icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
