@@ -1399,6 +1399,165 @@
       border: 1px solid #ef4444;
     }
 
+
+    /* ==========================================================
+       漢字の読み ＆ 英語の意味（リアルタイム表示 ＆ 風水ルーペレンズ）
+       ========================================================== */
+    .kanji-en-row {
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      margin-top: 6px;
+      padding-top: 5px;
+      border-top: 1px dashed rgba(212, 175, 55, 0.2);
+      font-size: 0.74rem;
+    }
+    .kanji-yomi-tag {
+      background: rgba(212, 175, 55, 0.15);
+      border: 1px solid var(--gold-primary);
+      color: var(--gold-light);
+      padding: 1.5px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+    .kanji-en-tag {
+      background: rgba(59, 130, 246, 0.18);
+      border: 1px solid #60a5fa;
+      color: #bfdbfe;
+      padding: 1.5px 8px;
+      border-radius: 6px;
+      font-weight: 500;
+    }
+
+    /* レンズモード切替ボタン */
+    .btn-lens-toggle {
+      position: absolute;
+      top: 10px;
+      right: 76px;
+      background: rgba(18, 15, 22, 0.9);
+      border: 1.2px solid var(--gold-primary);
+      border-radius: 8px;
+      padding: 3px 8px;
+      color: var(--gold-light);
+      font-size: 0.68rem;
+      cursor: pointer;
+      z-index: 25;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+      transition: all 0.2s ease;
+    }
+    .btn-lens-toggle.active {
+      background: linear-gradient(135deg, #b45309, #d97706);
+      border-color: #fef08a;
+      color: #fff;
+      box-shadow: 0 0 10px rgba(254, 240, 138, 0.5);
+    }
+
+    /* 風水ルーペ（拡大鏡レンズ）オーバーレイ */
+    .fengshui-lens-overlay {
+      position: absolute;
+      pointer-events: none;
+      z-index: 40;
+      display: none;
+      transform: translate(-50%, -100%);
+      transition: opacity 0.15s ease;
+      filter: drop-shadow(0 10px 25px rgba(0,0,0,0.9));
+    }
+    .fengshui-lens-overlay.active {
+      display: block;
+    }
+
+    /* 真鍮ゴールド枠の丸型ルーペレンズ */
+    .lens-circle-loupe {
+      position: relative;
+      width: 74px;
+      height: 74px;
+      margin: 0 auto;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.25) 0%, rgba(20,16,25,0.7) 60%, rgba(5,3,8,0.92) 100%);
+      border: 3px solid var(--gold-light);
+      box-shadow: 
+        0 0 0 2px #5e4616,
+        inset 0 0 14px rgba(255,255,255,0.4),
+        inset 0 0 25px rgba(0,0,0,0.9),
+        0 0 15px rgba(212, 175, 55, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      backdrop-filter: blur(1px);
+    }
+    .lens-circle-loupe::after {
+      content: '';
+      position: absolute;
+      top: 6px;
+      left: 10px;
+      width: 24px;
+      height: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 100%);
+      border-radius: 50%;
+      transform: rotate(-30deg);
+      pointer-events: none;
+    }
+    .lens-zoom-kanji {
+      font-family: var(--font-serif);
+      font-size: 2.3rem;
+      font-weight: 800;
+      color: #fef08a;
+      text-shadow: 0 0 12px rgba(254, 240, 138, 0.8), 0 2px 4px #000;
+      line-height: 1;
+    }
+
+    /* レンズ直結の情報解説カード */
+    .lens-info-card {
+      margin-top: 6px;
+      background: rgba(14, 11, 18, 0.96);
+      border: 1.5px solid var(--gold-light);
+      border-radius: 12px;
+      padding: 8px 12px;
+      min-width: 210px;
+      max-width: 270px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.9), 0 0 12px rgba(212, 175, 55, 0.4);
+      text-align: left;
+    }
+    .lens-card-title-row {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      margin-bottom: 3px;
+    }
+    .lens-card-char-name {
+      font-family: var(--font-serif);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fef08a;
+      line-height: 1;
+    }
+    .lens-card-yomi-text {
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: #f5f4f0;
+      letter-spacing: 0.04em;
+    }
+    .lens-card-en-row {
+      font-size: 0.72rem;
+      color: #93c5fd;
+      font-weight: 600;
+      margin-bottom: 3px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .lens-card-desc-text {
+      font-size: 0.68rem;
+      color: #a0a0ab;
+      line-height: 1.45;
+    }
+
 </style>
 </head>
 <body>
@@ -1455,6 +1614,11 @@
         <span class="badge-zuoxiang" id="dispZuoXiang">坐午向子 (背南朝北)</span>
         <span class="badge-fenjin wangxiang" id="dispFenJin">丙子分金 (旺相・大吉線)</span>
       </div>
+      <!-- 漢字の読み ＆ 英語の意味表示 -->
+      <div class="kanji-en-row" id="dispKanjiEnRow">
+        <span class="kanji-yomi-tag" id="dispKanjiYomi">読み：ね・し (Zǐ)</span>
+        <span class="kanji-en-tag" id="dispKanjiEnglish">🇺🇸 North (The Rat)</span>
+      </div>
     </div>
 
     <!-- センサー・手動ステータスインジケータ -->
@@ -1472,6 +1636,9 @@
         <div class="corner-brass corner-bl"></div>
         <div class="corner-brass corner-br"></div>
         <div class="luopan-label-plate">採用高級電木<br>三元三合綜合羅盤</div>
+        <button class="btn-lens-toggle active" id="btnLensToggle" title="漢字の読みと英語の意味を拡大レンズで表示">
+          <span>🔍</span><span>漢字レンズ</span>
+        </button>
         <button class="btn-fullscreen-toggle" id="btnFullscreenToggle" title="羅盤全画面表示切替">
           <span>⛶</span><span>全画面</span>
         </button>
@@ -1496,6 +1663,21 @@
         <div class="crosshair-line-v"></div>
         <div class="crosshair-line-h"></div>
         <div class="target-aim-marker">▲</div>
+
+        <!-- 🔍 風水ルーペ（拡大レンズ ＆ 漢字の読み・英語意味表示） -->
+        <div class="fengshui-lens-overlay active" id="fengshuiLensOverlay" style="top: 75px; left: 50%;">
+          <div class="lens-circle-loupe">
+            <span class="lens-zoom-kanji" id="lensZoomKanji">子</span>
+          </div>
+          <div class="lens-info-card">
+            <div class="lens-card-title-row">
+              <span class="lens-card-char-name" id="lensCardChar">子山</span>
+              <span class="lens-card-yomi-text" id="lensCardYomi">ね / し (Zǐ)</span>
+            </div>
+            <div class="lens-card-en-row" id="lensCardEn">🇺🇸 North (The Rat / Water)</div>
+            <div class="lens-card-desc-text" id="lensCardDesc">十二支第1位・正北（0°）。生命の原点・知性・万物の種子。</div>
+          </div>
+        </div>
 
         <!-- 2D SVG天盤（内盤円形） -->
         <div class="luopan-dial-inner" id="luopanDial">
@@ -1921,6 +2103,89 @@
       { kua: "艮", mount: "丑・艮・寅", shaMount: "寅山", shaDir: "東北東", poem: "艮虎離豬為煞曜" },
       { kua: "離", mount: "丙・午・丁", shaMount: "亥山", shaDir: "北北西", poem: "艮虎離豬為煞曜" }
     ];
+
+    
+    /* ========================================================
+       漢字の読み ＆ 英語の意味 総合辞書（二十四山・八卦・節気・九星）
+       ======================================================== */
+    const KANJI_DICTIONARY = {
+      // 二十四山（天干・地支・四維八卦）
+      "子": { name: "子山", yomi: "ね / し", pinyin: "Zǐ", en: "North (Rat)", type: "二十四山・地支", desc: "十二支の第1位。正北（0°）。万物の生命の原点・知性・種子。" },
+      "癸": { name: "癸山", yomi: "みずのと / き", pinyin: "Guǐ", en: "North-Northeast (Yin Water)", type: "二十四山・天干", desc: "十干の第10位。北北東（15°）。生命を育む静かな雨露の水。" },
+      "丑": { name: "丑山", yomi: "うし / ちゅう", pinyin: "Chǒu", en: "North-Northeast (Ox)", type: "二十四山・地支", desc: "十二支の第2位。北北東（30°）。粘り強い忍耐と不動の蓄財。" },
+      "艮": { name: "艮山", yomi: "うしとら / ごん", pinyin: "Gèn", en: "Northeast (Mountain)", type: "二十四山・八卦", desc: "後天八卦の艮。正北東（45°）。山のように揺るぎない安定・知恵。" },
+      "寅": { name: "寅山", yomi: "とら / いん", pinyin: "Yín", en: "East-Northeast (Tiger)", type: "二十四山・地支", desc: "十二支の第3位。東北東（60°）。陽気の発揚・勇気・果敢な行動力。" },
+      "甲": { name: "甲山", yomi: "きのえ / こう", pinyin: "Jiǎ", en: "East-Northeast (Yang Wood)", type: "二十四山・天干", desc: "十干の第1位。東北東（75°）。大樹のように真っ直ぐ伸びる開拓力。" },
+      "卯": { name: "卯山", yomi: "う / ぼう", pinyin: "Mǎo", en: "East (Rabbit)", type: "二十四山・地支", desc: "十二支の第4位。正東（90°）。春の生命力・繁栄・柔和な発展。" },
+      "乙": { name: "乙山", yomi: "きのと / おつ", pinyin: "Yǐ", en: "East-Southeast (Yin Wood)", type: "二十四山・天干", desc: "十干の第2位。東南東（105°）。しなやかな草花・柔軟な適応力・人脈。" },
+      "辰": { name: "辰山", yomi: "たつ / しん", pinyin: "Chén", en: "East-Southeast (Dragon)", type: "二十四山・地支", desc: "十二支の第5位。東南東（120°）。龍脈の躍動・大発展・活発な生気。" },
+      "巽": { name: "巽山", yomi: "たつみ / そん", pinyin: "Xùn", en: "Southeast (Wind)", type: "二十四山・八卦", desc: "後天八卦の巽。正南東（135°）。風のように自在・信用・商売繁盛。" },
+      "巳": { name: "巳山", yomi: "み / し", pinyin: "Sì", en: "South-Southeast (Snake)", type: "二十四山・地支", desc: "十二支の第6位。南南東（150°）。燃え上がる知性・鋭い直観・探求心。" },
+      "丙": { name: "丙山", yomi: "ひのえ / へい", pinyin: "Bǐng", en: "South-Southeast (Yang Fire)", type: "二十四山・天干", desc: "十干の第3位。南南東（165°）。太陽の光照・明晰・堂々たる名誉。" },
+      "午": { name: "午山", yomi: "うま / ご", pinyin: "Wǔ", en: "South (Horse)", type: "二十四山・地支", desc: "十二支の第7位。正南（180°）。光り輝く頂点・美・情熱のエネルギー。" },
+      "丁": { name: "丁山", yomi: "ひのと / てい", pinyin: "Dīng", en: "South-Southwest (Yin Fire)", type: "二十四山・天干", desc: "十干の第4位。南南西（195°）。灯火・温もり・芸術的感性・学術。" },
+      "未": { name: "未山", yomi: "ひつじ / び", pinyin: "Wèi", en: "South-Southwest (Goat)", type: "二十四山・地支", desc: "十二支の第8位。南南西（210°）。温和・慈愛・家族愛・円満な調和。" },
+      "坤": { name: "坤山", yomi: "ひつじさる / こん", pinyin: "Kūn", en: "Southwest (Mother Earth)", type: "二十四山・八卦", desc: "後天八卦の坤。正南西（225°）。大地のようにすべてを受け入れる母性・包容力。" },
+      "申": { name: "申山", yomi: "さる / しん", pinyin: "Shēn", en: "West-Southwest (Monkey)", type: "二十四山・地支", desc: "十二支の第9位。西南西（240°）。機敏・才知・果断な判断力・金属の生気。" },
+      "庚": { name: "庚山", yomi: "かのえ / こう", pinyin: "Gēng", en: "West-Southwest (Yang Metal)", type: "二十四山・天干", desc: "十干の第7位。西南西（255°）。剛健な刀剣・変革・強い意志・収穫。" },
+      "酉": { name: "酉山", yomi: "とり / ゆう", pinyin: "Yǒu", en: "West (Rooster)", type: "二十四山・地支", desc: "十二支の第10位。正西（270°）。実りの秋・悦び・金財運・洗練された魅力。" },
+      "辛": { name: "辛山", yomi: "かのと / しん", pinyin: "Xīn", en: "West-Northwest (Yin Metal)", type: "二十四山・天干", desc: "十干の第8位。西北西（285°）。宝石・真珠の輝き・繊細な美的感覚。" },
+      "戌": { name: "戌山", yomi: "いぬ / じゅつ", pinyin: "Xū", en: "West-Northwest (Dog)", type: "二十四山・地支", desc: "十二支の第11位。西北西（300°）。忠義・守護・信頼・堅実な防衛力。" },
+      "乾": { name: "乾山", yomi: "いぬい / けん", pinyin: "Qián", en: "Northwest (Heaven / Leader)", type: "二十四山・八卦", desc: "後天八卦の乾。正北西（315°）。天・最高指導者・威厳・強力な後援運。" },
+      "亥": { name: "亥山", yomi: "い / がい", pinyin: "Hài", en: "North-Northwest (Pig/Boar)", type: "二十四山・地支", desc: "十二支の第12位。北北西（330°）。豊かな滋養・誠実・蓄積された財運。" },
+      "壬": { name: "壬山", yomi: "みずのえ / じん", pinyin: "Rén", en: "North-Northwest (Yang Water)", type: "二十四山・天干", desc: "十干の第9位。北北西（345°）。大河・大海原の雄大な流れ・広大な知略。" }
+    };
+
+    // レンズモード管理
+    let isLensActive = true;
+    const btnLensToggle = document.getElementById("btnLensToggle");
+    const fengshuiLensOverlay = document.getElementById("fengshuiLensOverlay");
+    const lensZoomKanji = document.getElementById("lensZoomKanji");
+    const lensCardChar = document.getElementById("lensCardChar");
+    const lensCardYomi = document.getElementById("lensCardYomi");
+    const lensCardEn = document.getElementById("lensCardEn");
+    const lensCardDesc = document.getElementById("lensCardDesc");
+
+    const dispKanjiYomi = document.getElementById("dispKanjiYomi");
+    const dispKanjiEnglish = document.getElementById("dispKanjiEnglish");
+
+    if (btnLensToggle) {
+      btnLensToggle.addEventListener("click", (e) => {
+        e.stopPropagation();
+        isLensActive = !isLensActive;
+        btnLensToggle.classList.toggle("active", isLensActive);
+        if (fengshuiLensOverlay) {
+          fengshuiLensOverlay.classList.toggle("active", isLensActive);
+        }
+      });
+    }
+
+    // レンズ内の漢字表示を更新する関数
+    function updateKanjiLensDisplay(m, b) {
+      const char = m.name[0];
+      const dict = KANJI_DICTIONARY[char] || {
+        name: m.name,
+        yomi: m.pinyin,
+        pinyin: m.pinyin,
+        en: m.dir,
+        desc: `${m.wuxing}行・${m.yinyang}の方位`
+      };
+
+      // 1. レンズオーバーレイの更新
+      if (lensZoomKanji) lensZoomKanji.textContent = char;
+      if (lensCardChar) lensCardChar.textContent = dict.name;
+      if (lensCardYomi) lensCardYomi.textContent = `${dict.yomi} (${dict.pinyin})`;
+      if (lensCardEn) lensCardEn.textContent = `🇺🇸 ${dict.en}`;
+      if (lensCardDesc) lensCardDesc.textContent = dict.desc;
+
+      // 2. 読み取りカードヘッダー側の更新（スマホでかざした時も常に表示）
+      if (dispKanjiYomi) {
+        dispKanjiYomi.textContent = `読み：${dict.yomi} (${dict.pinyin})`;
+      }
+      if (dispKanjiEnglish) {
+        dispKanjiEnglish.textContent = `🇺🇸 ${dict.en}`;
+      }
+    }
 
     const MOUNTAINS = [
       { name: "子山", pinyin: "Zi", deg: 0, dir: "北 (正北)", wuxing: "水", yinyang: "陽水", trigram: "坎", nature: "四正・地支" },
@@ -2930,6 +3195,7 @@
       dispWuxing.textContent = `五行：${m.wuxing} ｜ 陰陽：${m.yinyang} ｜ ${m.nature}`;
 
       updateFortuneBanner(b);
+      updateKanjiLensDisplay(m, b);
       renderPrescriptions();
       updateStudioEvaluation();
     }
