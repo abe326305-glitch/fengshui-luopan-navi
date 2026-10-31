@@ -1,5 +1,5 @@
 // sw.js - Service Worker for PWA (大人の本格風水羅盤ナビ)
-const CACHE_NAME = 'luopan-cache-v4';
+const CACHE_NAME = 'luopan-cache-v5';
 
 // プリキャッシュする重要アセット
 const PRECACHE_ASSETS = [
