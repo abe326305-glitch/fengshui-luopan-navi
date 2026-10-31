@@ -442,7 +442,8 @@
         0 0 0 1.5px var(--gold-primary);
       cursor: grab;
       transform-origin: center center;
-      transition: transform 0.12s cubic-bezier(0.1, 0.85, 0.25, 1);
+      touch-action: none;
+      will-change: transform;
     }
     .luopan-dial-inner:active { cursor: grabbing; }
     @media (max-width: 380px) {
@@ -1399,165 +1400,6 @@
       border: 1px solid #ef4444;
     }
 
-
-    /* ==========================================================
-       漢字の読み ＆ 英語の意味（リアルタイム表示 ＆ 風水ルーペレンズ）
-       ========================================================== */
-    .kanji-en-row {
-      width: 100%;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 6px;
-      margin-top: 6px;
-      padding-top: 5px;
-      border-top: 1px dashed rgba(212, 175, 55, 0.2);
-      font-size: 0.74rem;
-    }
-    .kanji-yomi-tag {
-      background: rgba(212, 175, 55, 0.15);
-      border: 1px solid var(--gold-primary);
-      color: var(--gold-light);
-      padding: 1.5px 8px;
-      border-radius: 6px;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-    }
-    .kanji-en-tag {
-      background: rgba(59, 130, 246, 0.18);
-      border: 1px solid #60a5fa;
-      color: #bfdbfe;
-      padding: 1.5px 8px;
-      border-radius: 6px;
-      font-weight: 500;
-    }
-
-    /* レンズモード切替ボタン */
-    .btn-lens-toggle {
-      position: absolute;
-      top: 10px;
-      right: 76px;
-      background: rgba(18, 15, 22, 0.9);
-      border: 1.2px solid var(--gold-primary);
-      border-radius: 8px;
-      padding: 3px 8px;
-      color: var(--gold-light);
-      font-size: 0.68rem;
-      cursor: pointer;
-      z-index: 25;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.6);
-      transition: all 0.2s ease;
-    }
-    .btn-lens-toggle.active {
-      background: linear-gradient(135deg, #b45309, #d97706);
-      border-color: #fef08a;
-      color: #fff;
-      box-shadow: 0 0 10px rgba(254, 240, 138, 0.5);
-    }
-
-    /* 風水ルーペ（拡大鏡レンズ）オーバーレイ */
-    .fengshui-lens-overlay {
-      position: absolute;
-      pointer-events: none;
-      z-index: 40;
-      display: none;
-      transform: translate(-50%, -100%);
-      transition: opacity 0.15s ease;
-      filter: drop-shadow(0 10px 25px rgba(0,0,0,0.9));
-    }
-    .fengshui-lens-overlay.active {
-      display: block;
-    }
-
-    /* 真鍮ゴールド枠の丸型ルーペレンズ */
-    .lens-circle-loupe {
-      position: relative;
-      width: 74px;
-      height: 74px;
-      margin: 0 auto;
-      border-radius: 50%;
-      background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.25) 0%, rgba(20,16,25,0.7) 60%, rgba(5,3,8,0.92) 100%);
-      border: 3px solid var(--gold-light);
-      box-shadow: 
-        0 0 0 2px #5e4616,
-        inset 0 0 14px rgba(255,255,255,0.4),
-        inset 0 0 25px rgba(0,0,0,0.9),
-        0 0 15px rgba(212, 175, 55, 0.5);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      backdrop-filter: blur(1px);
-    }
-    .lens-circle-loupe::after {
-      content: '';
-      position: absolute;
-      top: 6px;
-      left: 10px;
-      width: 24px;
-      height: 12px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 100%);
-      border-radius: 50%;
-      transform: rotate(-30deg);
-      pointer-events: none;
-    }
-    .lens-zoom-kanji {
-      font-family: var(--font-serif);
-      font-size: 2.3rem;
-      font-weight: 800;
-      color: #fef08a;
-      text-shadow: 0 0 12px rgba(254, 240, 138, 0.8), 0 2px 4px #000;
-      line-height: 1;
-    }
-
-    /* レンズ直結の情報解説カード */
-    .lens-info-card {
-      margin-top: 6px;
-      background: rgba(14, 11, 18, 0.96);
-      border: 1.5px solid var(--gold-light);
-      border-radius: 12px;
-      padding: 8px 12px;
-      min-width: 210px;
-      max-width: 270px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.9), 0 0 12px rgba(212, 175, 55, 0.4);
-      text-align: left;
-    }
-    .lens-card-title-row {
-      display: flex;
-      align-items: baseline;
-      gap: 6px;
-      margin-bottom: 3px;
-    }
-    .lens-card-char-name {
-      font-family: var(--font-serif);
-      font-size: 1.25rem;
-      font-weight: 800;
-      color: #fef08a;
-      line-height: 1;
-    }
-    .lens-card-yomi-text {
-      font-size: 0.76rem;
-      font-weight: 700;
-      color: #f5f4f0;
-      letter-spacing: 0.04em;
-    }
-    .lens-card-en-row {
-      font-size: 0.72rem;
-      color: #93c5fd;
-      font-weight: 600;
-      margin-bottom: 3px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .lens-card-desc-text {
-      font-size: 0.68rem;
-      color: #a0a0ab;
-      line-height: 1.45;
-    }
-
 </style>
 </head>
 <body>
@@ -1614,11 +1456,6 @@
         <span class="badge-zuoxiang" id="dispZuoXiang">坐午向子 (背南朝北)</span>
         <span class="badge-fenjin wangxiang" id="dispFenJin">丙子分金 (旺相・大吉線)</span>
       </div>
-      <!-- 漢字の読み ＆ 英語の意味表示 -->
-      <div class="kanji-en-row" id="dispKanjiEnRow">
-        <span class="kanji-yomi-tag" id="dispKanjiYomi">読み：ね・し (Zǐ)</span>
-        <span class="kanji-en-tag" id="dispKanjiEnglish">🇺🇸 North (The Rat)</span>
-      </div>
     </div>
 
     <!-- センサー・手動ステータスインジケータ -->
@@ -1636,9 +1473,6 @@
         <div class="corner-brass corner-bl"></div>
         <div class="corner-brass corner-br"></div>
         <div class="luopan-label-plate">採用高級電木<br>三元三合綜合羅盤</div>
-        <button class="btn-lens-toggle active" id="btnLensToggle" title="漢字の読みと英語の意味を拡大レンズで表示">
-          <span>🔍</span><span>漢字レンズ</span>
-        </button>
         <button class="btn-fullscreen-toggle" id="btnFullscreenToggle" title="羅盤全画面表示切替">
           <span>⛶</span><span>全画面</span>
         </button>
@@ -1663,21 +1497,6 @@
         <div class="crosshair-line-v"></div>
         <div class="crosshair-line-h"></div>
         <div class="target-aim-marker">▲</div>
-
-        <!-- 🔍 風水ルーペ（拡大レンズ ＆ 漢字の読み・英語意味表示） -->
-        <div class="fengshui-lens-overlay active" id="fengshuiLensOverlay" style="top: 75px; left: 50%;">
-          <div class="lens-circle-loupe">
-            <span class="lens-zoom-kanji" id="lensZoomKanji">子</span>
-          </div>
-          <div class="lens-info-card">
-            <div class="lens-card-title-row">
-              <span class="lens-card-char-name" id="lensCardChar">子山</span>
-              <span class="lens-card-yomi-text" id="lensCardYomi">ね / し (Zǐ)</span>
-            </div>
-            <div class="lens-card-en-row" id="lensCardEn">🇺🇸 North (The Rat / Water)</div>
-            <div class="lens-card-desc-text" id="lensCardDesc">十二支第1位・正北（0°）。生命の原点・知性・万物の種子。</div>
-          </div>
-        </div>
 
         <!-- 2D SVG天盤（内盤円形） -->
         <div class="luopan-dial-inner" id="luopanDial">
@@ -2104,89 +1923,6 @@
       { kua: "離", mount: "丙・午・丁", shaMount: "亥山", shaDir: "北北西", poem: "艮虎離豬為煞曜" }
     ];
 
-    
-    /* ========================================================
-       漢字の読み ＆ 英語の意味 総合辞書（二十四山・八卦・節気・九星）
-       ======================================================== */
-    const KANJI_DICTIONARY = {
-      // 二十四山（天干・地支・四維八卦）
-      "子": { name: "子山", yomi: "ね / し", pinyin: "Zǐ", en: "North (Rat)", type: "二十四山・地支", desc: "十二支の第1位。正北（0°）。万物の生命の原点・知性・種子。" },
-      "癸": { name: "癸山", yomi: "みずのと / き", pinyin: "Guǐ", en: "North-Northeast (Yin Water)", type: "二十四山・天干", desc: "十干の第10位。北北東（15°）。生命を育む静かな雨露の水。" },
-      "丑": { name: "丑山", yomi: "うし / ちゅう", pinyin: "Chǒu", en: "North-Northeast (Ox)", type: "二十四山・地支", desc: "十二支の第2位。北北東（30°）。粘り強い忍耐と不動の蓄財。" },
-      "艮": { name: "艮山", yomi: "うしとら / ごん", pinyin: "Gèn", en: "Northeast (Mountain)", type: "二十四山・八卦", desc: "後天八卦の艮。正北東（45°）。山のように揺るぎない安定・知恵。" },
-      "寅": { name: "寅山", yomi: "とら / いん", pinyin: "Yín", en: "East-Northeast (Tiger)", type: "二十四山・地支", desc: "十二支の第3位。東北東（60°）。陽気の発揚・勇気・果敢な行動力。" },
-      "甲": { name: "甲山", yomi: "きのえ / こう", pinyin: "Jiǎ", en: "East-Northeast (Yang Wood)", type: "二十四山・天干", desc: "十干の第1位。東北東（75°）。大樹のように真っ直ぐ伸びる開拓力。" },
-      "卯": { name: "卯山", yomi: "う / ぼう", pinyin: "Mǎo", en: "East (Rabbit)", type: "二十四山・地支", desc: "十二支の第4位。正東（90°）。春の生命力・繁栄・柔和な発展。" },
-      "乙": { name: "乙山", yomi: "きのと / おつ", pinyin: "Yǐ", en: "East-Southeast (Yin Wood)", type: "二十四山・天干", desc: "十干の第2位。東南東（105°）。しなやかな草花・柔軟な適応力・人脈。" },
-      "辰": { name: "辰山", yomi: "たつ / しん", pinyin: "Chén", en: "East-Southeast (Dragon)", type: "二十四山・地支", desc: "十二支の第5位。東南東（120°）。龍脈の躍動・大発展・活発な生気。" },
-      "巽": { name: "巽山", yomi: "たつみ / そん", pinyin: "Xùn", en: "Southeast (Wind)", type: "二十四山・八卦", desc: "後天八卦の巽。正南東（135°）。風のように自在・信用・商売繁盛。" },
-      "巳": { name: "巳山", yomi: "み / し", pinyin: "Sì", en: "South-Southeast (Snake)", type: "二十四山・地支", desc: "十二支の第6位。南南東（150°）。燃え上がる知性・鋭い直観・探求心。" },
-      "丙": { name: "丙山", yomi: "ひのえ / へい", pinyin: "Bǐng", en: "South-Southeast (Yang Fire)", type: "二十四山・天干", desc: "十干の第3位。南南東（165°）。太陽の光照・明晰・堂々たる名誉。" },
-      "午": { name: "午山", yomi: "うま / ご", pinyin: "Wǔ", en: "South (Horse)", type: "二十四山・地支", desc: "十二支の第7位。正南（180°）。光り輝く頂点・美・情熱のエネルギー。" },
-      "丁": { name: "丁山", yomi: "ひのと / てい", pinyin: "Dīng", en: "South-Southwest (Yin Fire)", type: "二十四山・天干", desc: "十干の第4位。南南西（195°）。灯火・温もり・芸術的感性・学術。" },
-      "未": { name: "未山", yomi: "ひつじ / び", pinyin: "Wèi", en: "South-Southwest (Goat)", type: "二十四山・地支", desc: "十二支の第8位。南南西（210°）。温和・慈愛・家族愛・円満な調和。" },
-      "坤": { name: "坤山", yomi: "ひつじさる / こん", pinyin: "Kūn", en: "Southwest (Mother Earth)", type: "二十四山・八卦", desc: "後天八卦の坤。正南西（225°）。大地のようにすべてを受け入れる母性・包容力。" },
-      "申": { name: "申山", yomi: "さる / しん", pinyin: "Shēn", en: "West-Southwest (Monkey)", type: "二十四山・地支", desc: "十二支の第9位。西南西（240°）。機敏・才知・果断な判断力・金属の生気。" },
-      "庚": { name: "庚山", yomi: "かのえ / こう", pinyin: "Gēng", en: "West-Southwest (Yang Metal)", type: "二十四山・天干", desc: "十干の第7位。西南西（255°）。剛健な刀剣・変革・強い意志・収穫。" },
-      "酉": { name: "酉山", yomi: "とり / ゆう", pinyin: "Yǒu", en: "West (Rooster)", type: "二十四山・地支", desc: "十二支の第10位。正西（270°）。実りの秋・悦び・金財運・洗練された魅力。" },
-      "辛": { name: "辛山", yomi: "かのと / しん", pinyin: "Xīn", en: "West-Northwest (Yin Metal)", type: "二十四山・天干", desc: "十干の第8位。西北西（285°）。宝石・真珠の輝き・繊細な美的感覚。" },
-      "戌": { name: "戌山", yomi: "いぬ / じゅつ", pinyin: "Xū", en: "West-Northwest (Dog)", type: "二十四山・地支", desc: "十二支の第11位。西北西（300°）。忠義・守護・信頼・堅実な防衛力。" },
-      "乾": { name: "乾山", yomi: "いぬい / けん", pinyin: "Qián", en: "Northwest (Heaven / Leader)", type: "二十四山・八卦", desc: "後天八卦の乾。正北西（315°）。天・最高指導者・威厳・強力な後援運。" },
-      "亥": { name: "亥山", yomi: "い / がい", pinyin: "Hài", en: "North-Northwest (Pig/Boar)", type: "二十四山・地支", desc: "十二支の第12位。北北西（330°）。豊かな滋養・誠実・蓄積された財運。" },
-      "壬": { name: "壬山", yomi: "みずのえ / じん", pinyin: "Rén", en: "North-Northwest (Yang Water)", type: "二十四山・天干", desc: "十干の第9位。北北西（345°）。大河・大海原の雄大な流れ・広大な知略。" }
-    };
-
-    // レンズモード管理
-    let isLensActive = true;
-    const btnLensToggle = document.getElementById("btnLensToggle");
-    const fengshuiLensOverlay = document.getElementById("fengshuiLensOverlay");
-    const lensZoomKanji = document.getElementById("lensZoomKanji");
-    const lensCardChar = document.getElementById("lensCardChar");
-    const lensCardYomi = document.getElementById("lensCardYomi");
-    const lensCardEn = document.getElementById("lensCardEn");
-    const lensCardDesc = document.getElementById("lensCardDesc");
-
-    const dispKanjiYomi = document.getElementById("dispKanjiYomi");
-    const dispKanjiEnglish = document.getElementById("dispKanjiEnglish");
-
-    if (btnLensToggle) {
-      btnLensToggle.addEventListener("click", (e) => {
-        e.stopPropagation();
-        isLensActive = !isLensActive;
-        btnLensToggle.classList.toggle("active", isLensActive);
-        if (fengshuiLensOverlay) {
-          fengshuiLensOverlay.classList.toggle("active", isLensActive);
-        }
-      });
-    }
-
-    // レンズ内の漢字表示を更新する関数
-    function updateKanjiLensDisplay(m, b) {
-      const char = m.name[0];
-      const dict = KANJI_DICTIONARY[char] || {
-        name: m.name,
-        yomi: m.pinyin,
-        pinyin: m.pinyin,
-        en: m.dir,
-        desc: `${m.wuxing}行・${m.yinyang}の方位`
-      };
-
-      // 1. レンズオーバーレイの更新
-      if (lensZoomKanji) lensZoomKanji.textContent = char;
-      if (lensCardChar) lensCardChar.textContent = dict.name;
-      if (lensCardYomi) lensCardYomi.textContent = `${dict.yomi} (${dict.pinyin})`;
-      if (lensCardEn) lensCardEn.textContent = `🇺🇸 ${dict.en}`;
-      if (lensCardDesc) lensCardDesc.textContent = dict.desc;
-
-      // 2. 読み取りカードヘッダー側の更新（スマホでかざした時も常に表示）
-      if (dispKanjiYomi) {
-        dispKanjiYomi.textContent = `読み：${dict.yomi} (${dict.pinyin})`;
-      }
-      if (dispKanjiEnglish) {
-        dispKanjiEnglish.textContent = `🇺🇸 ${dict.en}`;
-      }
-    }
-
     const MOUNTAINS = [
       { name: "子山", pinyin: "Zi", deg: 0, dir: "北 (正北)", wuxing: "水", yinyang: "陽水", trigram: "坎", nature: "四正・地支" },
       { name: "癸山", pinyin: "Gui", deg: 15, dir: "北 (北北東)", wuxing: "水", yinyang: "陰水", trigram: "坎", nature: "天干" },
@@ -2395,12 +2131,16 @@
 
     function initAudio() {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx && audioCtx.state === "suspended") {
+        audioCtx.resume().catch(() => {});
+      }
     }
 
-    let lastClickDeg = 0;
+    let lastTickSector = -1;
     function playDialTick() {
       if (!isSoundEnabled || !audioCtx) return;
       try {
+        if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.type = "sine";
@@ -2416,9 +2156,13 @@
     }
 
     let hasPlayedLevelOk = false;
+    let lastLevelChimeTime = 0;
     function playLevelChime() {
       if (!isSoundEnabled || !audioCtx) return;
+      if (Date.now() - lastLevelChimeTime < 2500) return;
+      lastLevelChimeTime = Date.now();
       try {
+        if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
         const now = audioCtx.currentTime;
         const osc1 = audioCtx.createOscillator();
         const osc2 = audioCtx.createOscillator();
@@ -2434,8 +2178,8 @@
         gain.connect(audioCtx.destination);
         osc1.start(now);
         osc2.start(now);
-        osc1.stop(now + 0.36);
-        osc2.stop(now + 0.36);
+        osc1.stop(now + 0.4);
+        osc2.stop(now + 0.4);
       } catch (e) {}
     }
 
@@ -2923,10 +2667,14 @@
 
     function animate3D() {
       requestAnimationFrame(animate3D);
-      if (!is3DInitialized) return;
-      // 方位に合わせた天盤回転（反時計回り）
+      if (!is3DInitialized || currentActiveTab !== "view3d") return;
+      // 方位に合わせた天盤回転（累積角で360度逆回転防止）
       if (threeDialDisc) {
-        threeDialDisc.rotation.y = THREE.MathUtils.lerp(threeDialDisc.rotation.y, (currentDegree * Math.PI / 180), 0.15);
+        threeDialDisc.rotation.y = THREE.MathUtils.lerp(
+          threeDialDisc.rotation.y,
+          (continuousHeading * Math.PI / 180),
+          0.15
+        );
       }
       threeRenderer.render(threeScene, threeCamera);
     }
@@ -3046,7 +2794,7 @@
 
     function animateStudio() {
       requestAnimationFrame(animateStudio);
-      if (!isStudioInitialized) return;
+      if (!isStudioInitialized || currentActiveTab !== "viewStudio") return;
 
       // パーティクル気流の緩やかな浮遊アニメーション
       const positions = studioParticles.geometry.attributes.position.array;
@@ -3104,15 +2852,23 @@
     }
 
     /* ========================================================
-       7. アプリケーションステート＆画面更新
+       7. アプリケーションステート＆画面更新（手ブレ徹底防止・超高安定化設計）
        ======================================================== */
-    let currentDegree = 0;
+    let currentDegree = 0;       // 0〜359 整数（方位・吉凶判定用）
+    let displayedAngle = 0;      // 0.0〜359.9 実表示用滑らか角度
+    let continuousHeading = 0;   // 累積連続回転角（360度境界での逆回転バグ完全消滅）
+    let targetHeading = 0;       // センサーまたは手動の目標方位角
     let isCompassActive = false;
     let isARActive = false;
     let isHeld = false;
+    let isDragging2D = false;
     let currentKua = calculateKuaNumber(1980, "male");
     let currentRoom = "entrance";
-    let lastManualTime = 0; // 手動操作の時刻（センサーによる強制上書きを一時防ぐ）
+    let lastManualTime = 0;      // 手動操作の最終時刻
+
+    // キャッシュ用変数（不要なDOM再構築・リフローを防止して60fps維持）
+    let lastRenderedBaguaKey = "";
+    let lastRenderedMountainName = "";
 
     const luopanDial = document.getElementById("luopanDial");
     const dispDegree = document.getElementById("dispDegree");
@@ -3150,6 +2906,14 @@
     const fortuneLevelPill = document.getElementById("fortuneLevelPill");
     const prescriptionList = document.getElementById("prescriptionList");
 
+    // 最短角差動計算 (-180〜+180度)
+    function getShortestAngleDiff(target, current) {
+      let diff = (target - current) % 360;
+      if (diff < -180) diff += 360;
+      if (diff > 180) diff -= 360;
+      return diff;
+    }
+
     function getMountainByDeg(deg) {
       const norm = (deg % 360 + 360) % 360;
       for (let m of MOUNTAINS) {
@@ -3170,35 +2934,89 @@
       return EIGHT_BAGUA[0];
     }
 
-    function setHeading(deg) {
-      if (isHeld) return;
-      currentDegree = Math.round((deg % 360 + 360) % 360);
+    // 画面への反映処理（度数・天盤回転・DOM更新）
+    function renderHeading(degFloat, continuousAngle, forceDomUpdate = false) {
+      currentDegree = Math.round((degFloat % 360 + 360) % 360);
 
-      if (Math.abs(currentDegree - lastClickDeg) >= 15 || Math.abs(currentDegree - lastClickDeg) === 0) {
-        playDialTick();
-        lastClickDeg = currentDegree;
+      // 1. 2D天盤の回転（累積回転角で360度逆回転スピンを完全防止）
+      if (luopanDial) {
+        luopanDial.style.transform = `rotate(${-continuousAngle}deg)`;
       }
 
-      // 2D盤の回転
-      if (luopanDial) luopanDial.style.transform = `rotate(${-currentDegree}deg)`;
-
+      // 2. 度数表示
       dispDegree.textContent = `${currentDegree}°`;
       sliderValDisplay.textContent = `${currentDegree}°`;
-      angleRange.value = currentDegree;
+      if (document.activeElement !== angleRange) {
+        angleRange.value = currentDegree;
+      }
 
+      // 3. ダイヤル音（15度＝1山の境界をまたいだ瞬間だけ1回鳴る）
+      const currentSector = Math.floor(currentDegree / 15);
+      if (lastTickSector !== -1 && currentSector !== lastTickSector) {
+        playDialTick();
+      }
+      lastTickSector = currentSector;
+
+      // 4. 二十四山（15度単位の更新：変化時のみDOM更新）
       const m = getMountainByDeg(currentDegree);
       const b = getBaguaByDeg(currentDegree);
 
-      dispEightDir.textContent = `${b.dir} (${m.dir})`;
-      dispKuaGroup.textContent = `${b.group}方位`;
-      dispMountain.textContent = m.name;
-      dispWuxing.textContent = `五行：${m.wuxing} ｜ 陰陽：${m.yinyang} ｜ ${m.nature}`;
+      if (forceDomUpdate || m.name !== lastRenderedMountainName) {
+        dispEightDir.textContent = `${b.dir} (${m.dir})`;
+        dispKuaGroup.textContent = `${b.group}方位`;
+        dispMountain.textContent = m.name;
+        dispWuxing.textContent = `五行：${m.wuxing} ｜ 陰陽：${m.yinyang} ｜ ${m.nature}`;
+        lastRenderedMountainName = m.name;
+      }
 
-      updateFortuneBanner(b);
-      updateKanjiLensDisplay(m, b);
-      renderPrescriptions();
-      updateStudioEvaluation();
+      // 5. 八卦吉凶バナー＆処方箋リスト（45度単位の更新：変化時のみDOM再構築）
+      if (forceDomUpdate || b.key !== lastRenderedBaguaKey) {
+        updateFortuneBanner(b);
+        renderPrescriptions();
+        lastRenderedBaguaKey = b.key;
+      }
     }
+
+    // 手動操作や初期化時に即座に方位を設定
+    function setHeading(deg, immediate = true) {
+      if (isHeld) return;
+      const norm = (deg % 360 + 360) % 360;
+      targetHeading = norm;
+
+      if (immediate) {
+        const diff = getShortestAngleDiff(norm, displayedAngle);
+        continuousHeading += diff;
+        displayedAngle = norm;
+        renderHeading(displayedAngle, continuousHeading, true);
+      }
+    }
+
+    // 【超強力手ブレ防止】適応型ローパス平滑化モーションループ
+    function updateMotionLoop() {
+      requestAnimationFrame(updateMotionLoop);
+
+      if (isHeld) return;
+
+      const isManualOverridden = (Date.now() - lastManualTime) < 1800;
+
+      if (isCompassActive && !isManualOverridden && !isDragging2D) {
+        const diff = getShortestAngleDiff(targetHeading, displayedAngle);
+
+        // 手ブレ・磁気ノイズ（0.25度未満）は完全に無視してピタッと吸着静止
+        if (Math.abs(diff) > 0.25) {
+          const absDiff = Math.abs(diff);
+          // 適応型フィルター：小さなブレは0.08の重厚ダンピングで吸収、大きな旋回は0.28で軽快に追従
+          const factor = absDiff > 35 ? 0.28 : (absDiff > 10 ? 0.16 : 0.08);
+          const step = diff * factor;
+
+          displayedAngle = (displayedAngle + step + 360) % 360;
+          continuousHeading += step;
+          renderHeading(displayedAngle, continuousHeading);
+        }
+      }
+    }
+    // モーションループを即時起動
+    requestAnimationFrame(updateMotionLoop);
 
     function updateFortuneBanner(bagua) {
       const table = KUA_TABLE[currentKua.key];
@@ -3245,6 +3063,7 @@
     /* ========================================================
        8. 3大モード切り替え＆イベントリスナー
        ======================================================== */
+    let currentActiveTab = "view2d";
     const modeTabs = document.querySelectorAll(".mode-tab-btn");
     modeTabs.forEach(tab => {
       tab.addEventListener("click", () => {
@@ -3252,6 +3071,7 @@
         modeTabs.forEach(t => t.classList.remove("active"));
         tab.classList.add("active");
         const targetView = tab.dataset.view;
+        currentActiveTab = targetView;
 
         document.querySelectorAll(".view-section").forEach(sec => sec.classList.remove("active"));
         document.getElementById(targetView).classList.add("active");
@@ -3349,6 +3169,7 @@
     // ========================================================
     let lastSensorTime = 0;
     let sensorHeadingReceived = false;
+    let hasReceivedAbsolute = false;
 
     btnCompass.addEventListener("click", async () => {
       initAudio();
@@ -3361,6 +3182,8 @@
 
     async function startCompass() {
       sensorHeadingReceived = false;
+      hasReceivedAbsolute = false;
+
       // iOS 13+ 権限リクエスト
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         try {
@@ -3380,7 +3203,7 @@
     }
 
     function attachOrientationListeners() {
-      // Android用（絶対方位コンパス）
+      // Android等（絶対方位コンパスイベント）
       if ('ondeviceorientationabsolute' in window) {
         window.addEventListener("deviceorientationabsolute", handleDeviceOrientationAbsolute, true);
       }
@@ -3391,7 +3214,6 @@
       btnCompass.classList.add("active");
       sensorBtnLabel.textContent = "コンパス稼働中 (タップで停止)";
 
-      // 3秒以内にセンサーから値が届かなかった場合の安心ガイド
       setTimeout(() => {
         if (isCompassActive && !sensorHeadingReceived) {
           console.log("Sensor data not detected yet. Manual dial is fully active.");
@@ -3406,6 +3228,7 @@
       window.removeEventListener("deviceorientation", handleDeviceOrientationStandard, true);
 
       isCompassActive = false;
+      hasReceivedAbsolute = false;
       btnCompass.classList.remove("active");
       sensorBtnLabel.textContent = "コンパス開始";
       if (sensorStatusIndicator) {
@@ -3414,13 +3237,48 @@
       }
     }
 
-    // Android用：絶対方位コンパス
+    // W3C標準 3次元チルト補正方位算出（Android・スマホを立ててかざした時の狂いを完全補正）
+    function computeTiltCompensatedHeading(alpha, beta, gamma) {
+      const deg2rad = Math.PI / 180;
+      const a = (alpha || 0) * deg2rad;
+      const b = (beta  || 0) * deg2rad;
+      const g = (gamma || 0) * deg2rad;
+
+      const cA = Math.cos(a), sA = Math.sin(a);
+      const cB = Math.cos(b), sB = Math.sin(b);
+      const cG = Math.cos(g), sG = Math.sin(g);
+
+      // スマホの持ち方に応じた前方ベクトルの算出
+      // スマホを立てている時（ARカメラや目の前にかざす時）は背面カメラ方向、手元平置き時は端末上部方向
+      const pitch = Math.abs(beta || 0);
+      let vx, vy;
+      if (pitch > 65 || isARActive) {
+        // 立てた状態（背面カメラ方向）
+        vx = -cA * sG - sA * sB * cG;
+        vy = -sA * sG + cA * sB * cG;
+      } else {
+        // 平置き〜手元見下ろし（端末上部方向）
+        vx = -sA * cB;
+        vy = cA * cB;
+      }
+
+      let heading = Math.atan2(vx, vy) * (180 / Math.PI);
+      heading = (heading % 360 + 360) % 360;
+
+      // 画面の回転（縦向き・横向き）の自動補正
+      const screenAngle = (screen.orientation && typeof screen.orientation.angle === 'number')
+        ? screen.orientation.angle
+        : (window.orientation || 0);
+      return (heading + screenAngle) % 360;
+    }
+
+    // Android用：絶対方位コンパスイベント
     function handleDeviceOrientationAbsolute(event) {
       if (!isCompassActive) return;
       if (event.alpha !== null && event.alpha !== undefined) {
         sensorHeadingReceived = true;
-        // Android Chrome: alphaは反時計回り (0〜360)
-        let heading = (360 - event.alpha) % 360;
+        hasReceivedAbsolute = true;
+        const heading = computeTiltCompensatedHeading(event.alpha, event.beta, event.gamma);
         processSensorHeading(heading, event.beta, event.gamma);
       }
     }
@@ -3429,21 +3287,25 @@
     function handleDeviceOrientationStandard(event) {
       if (!isCompassActive) return;
 
-      let heading = null;
-      if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null) {
-        // iOS Safari: webkitCompassHeading (0〜360、北=0)
-        heading = event.webkitCompassHeading;
-        sensorHeadingReceived = true;
-      } else if (event.absolute && event.alpha !== null && event.alpha !== undefined) {
-        // 標準絶対方位
-        heading = (360 - event.alpha) % 360;
-        sensorHeadingReceived = true;
-      } else if (!sensorHeadingReceived && event.alpha !== null && event.alpha !== undefined) {
-        // 相対方位フォールバック
-        heading = (360 - event.alpha) % 360;
+      // Android等で絶対方位イベントが既に稼働している場合は二重処理・競合を防止
+      if (hasReceivedAbsolute && typeof event.webkitCompassHeading === 'undefined') {
+        return;
       }
 
-      processSensorHeading(heading, event.beta, event.gamma);
+      let heading = null;
+      if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null) {
+        // iOS Safari: OS内部でチルト補正された高精度絶対方位
+        heading = event.webkitCompassHeading;
+        sensorHeadingReceived = true;
+      } else if (event.alpha !== null && event.alpha !== undefined) {
+        // 一般Android / 標準ブラウザフォールバック
+        heading = computeTiltCompensatedHeading(event.alpha, event.beta, event.gamma);
+        sensorHeadingReceived = true;
+      }
+
+      if (heading !== null) {
+        processSensorHeading(heading, event.beta, event.gamma);
+      }
     }
 
     // センサーで検知した方位と傾きの統一処理
@@ -3454,7 +3316,8 @@
       const isManualOverridden = (Date.now() - lastManualTime) < 1800;
 
       if (heading !== null && !isManualOverridden && !isHeld) {
-        setHeading(heading);
+        // 目標角を更新（超高安定平滑化ループが手ブレを消して滑らかに追従）
+        targetHeading = heading;
         if (sensorStatusIndicator) {
           sensorStatusIndicator.className = "sensor-status-indicator tracking";
           sensorStatusIndicator.innerHTML = `<span>🟢</span> <span>方位センサー追従中 (${Math.round(heading)}°)</span>`;
@@ -3480,8 +3343,8 @@
         hasPlayedLevelOk = false;
       }
 
-      // 3D羅盤の傾きジャイロ連動
-      if (threeLuopanGroup && is3DInitialized) {
+      // 3D羅盤の傾きジャイロ連動（3Dタブ表示時のみ）
+      if (threeLuopanGroup && is3DInitialized && currentActiveTab === "view3d") {
         threeLuopanGroup.rotation.x = THREE.MathUtils.lerp(threeLuopanGroup.rotation.x, (b * Math.PI / 180) * 0.5, 0.1);
         threeLuopanGroup.rotation.z = THREE.MathUtils.lerp(threeLuopanGroup.rotation.z, (-g * Math.PI / 180) * 0.5, 0.1);
       }
@@ -3531,21 +3394,23 @@
     luopanDial.addEventListener("pointerdown", (e) => {
       initAudio();
       isDragging2D = true;
-      lastManualTime = Date.now(); // 手動操作開始を記録
+      lastManualTime = Date.now();
       const rect = luopanDial.getBoundingClientRect();
       const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
       startAngle2D = Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI;
-      baseAngle2D = currentDegree;
+      baseAngle2D = displayedAngle;
       luopanDial.setPointerCapture(e.pointerId);
     });
 
     luopanDial.addEventListener("pointermove", (e) => {
       if (!isDragging2D) return;
-      lastManualTime = Date.now(); // 手動操作中を継続
+      lastManualTime = Date.now();
       const rect = luopanDial.getBoundingClientRect();
       const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
       const currentAngle = Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI;
-      setHeading(baseAngle2D - (currentAngle - startAngle2D));
+      const delta = currentAngle - startAngle2D;
+      const newAngle = (baseAngle2D - delta + 360) % 360;
+      setHeading(newAngle, true);
     });
 
     luopanDial.addEventListener("pointerup", (e) => {
